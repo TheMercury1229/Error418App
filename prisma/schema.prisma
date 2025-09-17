@@ -1,9 +1,46 @@
-generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
-}
+// schema.prisma
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL") // pooled connection (good for runtime)
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  clerkId       String         @id
+  instaUsername String?
+  instaPassword String? // ⚠️ recommend encrypting before saving
+  conversations Conversation[]
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  title     String?
+  role      String // e.g. "influencer", "marketer" (system prompt mapping in data.js)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clerkId String
+  user    User   @relation(fields: [clerkId], references: [clerkId], onDelete: Cascade)
+
+  messages Message[]
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           Role // "user" or "assistant"
+  content        String?
+  imageUrls      String[] // requires Postgres; for MySQL/SQLite, model images separately
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  user
+  assistant
 }
