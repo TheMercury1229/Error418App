@@ -45,7 +45,7 @@ export class VideoGenerationService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes timeout
 
-      const response = await fetch(`${API_BASE_URL}/generate-video`, {
+      const response = await fetch(`${API_BASE_URL}`, {
         method: "POST",
         body: formData,
         signal: controller.signal,
