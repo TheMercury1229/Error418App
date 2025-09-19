@@ -1,4 +1,12 @@
-import { Calendar, Home, Mic, Settings, Palette, Users } from "lucide-react";
+import {
+  Calendar,
+  Home,
+  Mic,
+  Settings,
+  Palette,
+  Users,
+  Video,
+} from "lucide-react";
 
 export const navigation = [
   {
@@ -10,6 +18,11 @@ export const navigation = [
     name: "Studio",
     href: "/studio",
     icon: Palette,
+  },
+  {
+    name: "AI Video",
+    href: "/ai-video",
+    icon: Video,
   },
   {
     name: "Scheduler",
