@@ -1,5 +1,3 @@
-import axios from "axios";
-
 const API_BASE_URL =
   "https://video-generation-orchestrator-1051522129986.us-central1.run.app";
 
@@ -31,61 +29,80 @@ export class VideoGenerationService {
     request: VideoGenerationApiRequest
   ): Promise<VideoGenerationApiResponse> {
     try {
-      // Create FormData for file upload
+      console.log("🚀 Starting video generation with fetch...");
+
       const formData = new FormData();
       formData.append("image", request.image);
       formData.append("prompt", request.prompt);
 
-      console.log("Sending video generation request:", {
+      console.log("📝 Request details:", {
         prompt: request.prompt,
         imageSize: request.image.size,
         imageName: request.image.name,
       });
 
-      // Create axios instance with longer timeout and retry logic
-      const axiosInstance = axios.create({
-        timeout: 0, // Disable timeout completely for long-running requests
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        // Add additional configurations for better reliability
-        maxRedirects: 5,
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
+      // Use fetch with proper timeout handling for long requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes timeout
+
+      const response = await fetch(`${API_BASE_URL}/generate-video`, {
+        method: "POST",
+        body: formData,
+        signal: controller.signal,
       });
 
-      const response = await axiosInstance.post<VideoGenerationApiResponse>(
-        `${API_BASE_URL}`,
-        formData
-      );
+      clearTimeout(timeoutId);
 
-      console.log("Video generation response:", response.data);
-      return response.data;
-    } catch (error) {
-      console.error("Video generation failed:", error);
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
 
-      if (axios.isAxiosError(error)) {
-        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-          throw new Error("Video generation is taking longer than expected. The process may still be running on the server. Please try again in a few minutes.");
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use default error message
         }
-        
-        if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-          throw new Error("Network connection error. Please check your internet connection and try again.");
+
+        if (response.status === 413) {
+          throw new Error("File too large. Please try with a smaller image.");
         }
-        
-        if (error.response?.status === 413) {
-          throw new Error("Image file is too large. Please try with a smaller image (under 10MB).");
+
+        if (response.status >= 500) {
+          throw new Error("Server error. Please try again later.");
         }
-        
-        if (error.response && error.response.status >= 500) {
-          throw new Error("Server error occurred during video generation. Please try again later.");
-        }
-        
-        const message = error.response?.data?.message || error.message;
-        throw new Error(`Video generation failed: ${message}`);
+
+        throw new Error(errorMessage);
       }
 
-      throw new Error("Video generation failed: Unknown error");
+      const data = await response.json();
+
+      console.log("✅ Video generation successful:", {
+        message: data.message,
+        video_url: data.video_url ? "✓" : "✗",
+        video_uri: data.video_uri ? "✓" : "✗",
+      });
+
+      return data;
+    } catch (error) {
+      console.error("❌ Video generation failed:", error);
+
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          throw new Error(
+            "Request timed out. Video generation is taking longer than expected. Please try again."
+          );
+        }
+
+        if (error.message.includes("fetch")) {
+          throw new Error(
+            "Network error. Please check your connection and try again."
+          );
+        }
+
+        throw error;
+      }
+
+      throw new Error("An unexpected error occurred during video generation.");
     }
   }
 }
