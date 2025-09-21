@@ -1,6 +1,6 @@
-import { ReelCreation } from "@/features/reel-creation/reel-creation";
+import { ImageStudio } from "@/features/image-studio/image-studio";
 import React from "react";
 
 export default function Studio() {
-  return <ReelCreation />;
+  return <ImageStudio />;
 }

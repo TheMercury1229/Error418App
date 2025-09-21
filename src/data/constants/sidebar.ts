@@ -7,6 +7,7 @@ import {
   Video,
   Instagram,
   Eye,
+  Image,
 } from "lucide-react";
 
 export const navigation = [
@@ -16,9 +17,9 @@ export const navigation = [
     icon: Home,
   },
   {
-    name: "Studio",
+    name: "Image Studio",
     href: "/studio",
-    icon: Palette,
+    icon: Image,
   },
   {
     name: "AI Video",

@@ -10,6 +10,16 @@ export interface AIImageHelperRequest {
   image_url?: string;
 }
 
+export interface AIGenerateImageRequest {
+  prompt: string;
+}
+
+export interface AIGenerateImageResponse {
+  success: boolean;
+  imageBlob?: Blob;
+  error?: string;
+}
+
 export class AIImageHelperService {
   private baseUrl: string;
 
@@ -107,6 +117,57 @@ export class AIImageHelperService {
   // Get the current API URL
   getApiUrl(): string {
     return this.baseUrl;
+  }
+
+
+  // Generate a new image from a text prompt
+  async generateImage(request: AIGenerateImageRequest): Promise<AIGenerateImageResponse> {
+    try {
+      console.log('Generating image with prompt:', request.prompt);
+
+      const response = await fetch(`${this.baseUrl}/generate_image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Image generation API error:', errorText);
+        throw new Error(`Image generation failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      // Convert the response to a blob (raw image bytes)
+      const imageBlob = await response.blob();
+
+      console.log('Image generation successful:', {
+        blobSize: imageBlob.size,
+        blobType: imageBlob.type,
+        hasValidImage: imageBlob.size > 0 && imageBlob.type.startsWith('image/')
+      });
+
+      // Validate that we received a valid image
+      if (imageBlob.size === 0) {
+        throw new Error('AI service returned empty image');
+      }
+
+      if (!imageBlob.type.startsWith('image/')) {
+        throw new Error(`AI service returned invalid content type: ${imageBlob.type}`);
+      }
+
+      return {
+        success: true,
+        imageBlob: imageBlob,
+      };
+    } catch (error) {
+      console.error('Image generation error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
   }
 }
 
