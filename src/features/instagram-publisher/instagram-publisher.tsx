@@ -21,9 +21,13 @@ import {
   Calendar,
   Eye,
   RefreshCw,
+  Sparkles,
+  Wand2,
 } from "lucide-react";
 import { InstagramService } from "@/services/instagram.service";
 import { instagramDbService } from "@/services/instagram-db.service";
+import { aiImageHelperService } from "@/services/ai-image-helper.service";
+import { toast } from "sonner";
 
 interface InstagramPublisherProps {
   mediaUrl?: string;
@@ -49,6 +53,13 @@ export function InstagramPublisher({
   const [success, setSuccess] = useState<string | null>(null);
   const [apiStatus, setApiStatus] = useState<'checking' | 'ready' | 'error'>('checking');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // AI Helper state
+  const [aiPrompt, setAiPrompt] = useState<string>("");
+  const [isProcessingAI, setIsProcessingAI] = useState(false);
+  const [aiProcessedImage, setAiProcessedImage] = useState<string>("");
+  const [showAIPrompt, setShowAIPrompt] = useState(false);
+  const [isAIProcessed, setIsAIProcessed] = useState(false);
 
   const instagramService = new InstagramService();
 
@@ -172,6 +183,7 @@ export function InstagramPublisher({
         if (result.success && result.url) {
           // Use the public URL for Instagram API
           setPreviewUrl(result.url);
+          setIsAIProcessed(false); // Reset AI processed flag for new uploads
           console.log('Image uploaded successfully:', result.url);
         } else {
           setError(`Upload failed: ${result.error || 'Unknown error'}`);
@@ -185,6 +197,103 @@ export function InstagramPublisher({
     }
   };
 
+  const handleAIProcessing = async () => {
+    if (!previewUrl || !aiPrompt.trim()) {
+      setError('Please select an image and enter a prompt for AI processing');
+      return;
+    }
+
+    setIsProcessingAI(true);
+    setError(null);
+
+    try {
+      // Convert the preview URL to base64 for AI processing
+      const response = await fetch(previewUrl);
+      const blob = await response.blob();
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove the data:image/jpeg;base64, prefix
+          const base64Data = result.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.readAsDataURL(blob);
+      });
+
+      // Call AI helper service
+      const aiResult = await aiImageHelperService.processImage({
+        prompt: aiPrompt,
+        image_url: previewUrl,
+      });
+
+      if (aiResult.success && aiResult.imageBlob) {
+        console.log('AI Result received:', {
+          hasImageBlob: !!aiResult.imageBlob,
+          blobSize: aiResult.imageBlob.size,
+          blobType: aiResult.imageBlob.type,
+          caption: aiResult.caption
+        });
+
+        // The API returns a blob directly, so we can use it immediately
+        const processedBlob = aiResult.imageBlob;
+        const processedUrl = aiImageHelperService.blobToObjectURL(processedBlob);
+
+        console.log('Processed blob created:', {
+          blobSize: processedBlob.size,
+          blobType: processedBlob.type,
+          objectUrl: processedUrl
+        });
+        setAiProcessedImage(processedUrl);
+
+        // Upload the processed image to get public URL
+        const processedFormData = new FormData();
+        processedFormData.append('image', processedBlob, 'ai-processed-image.jpg');
+
+        const uploadResponse = await fetch('/api/instagram-upload', {
+          method: 'POST',
+          body: processedFormData,
+        });
+
+        const uploadResult = await uploadResponse.json();
+
+        if (uploadResult.success && uploadResult.url) {
+          // Use the processed image URL for Instagram API
+          setPreviewUrl(uploadResult.url);
+          setAiProcessedImage(uploadResult.url);
+          setIsAIProcessed(true);
+          toast.success(`AI processing completed successfully! ${aiResult.caption ? `Caption: ${aiResult.caption}` : ''}`);
+          setShowAIPrompt(false);
+          setAiPrompt('');
+        } else {
+          throw new Error(uploadResult.error || 'Failed to upload processed image');
+        }
+      } else {
+        throw new Error(aiResult.error || 'AI processing failed - no image returned');
+      }
+    } catch (error) {
+      console.error('AI processing error:', error);
+      let errorMessage = 'Failed to process image with AI';
+
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
+          errorMessage = 'AI service is currently unavailable. Please check your internet connection and try again.';
+        } else if (error.message.includes('404') || error.message.includes('Not Found')) {
+          errorMessage = 'AI service endpoint not found. Please contact support.';
+        } else if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) {
+          errorMessage = 'AI service is temporarily down. Please try again in a few minutes.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsProcessingAI(false);
+    }
+  };
+
   const clearError = () => {
     setError(null);
   };
@@ -193,7 +302,7 @@ export function InstagramPublisher({
     setSuccess(null);
   };
 
-  const isReady = apiStatus === 'ready' && previewUrl && caption.trim();
+  const isReady = apiStatus === 'ready' && previewUrl && caption.trim() && !isProcessingAI;
 
   return (
     <div className="space-y-6">
@@ -268,12 +377,20 @@ export function InstagramPublisher({
                 <p className="text-sm text-muted-foreground mb-4">
                   Choose a photo or video to publish to Instagram
                 </p>
-                <Input
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={handleMediaUpload}
-                  className="max-w-xs mx-auto"
-                />
+                <div className="space-y-3">
+                  <Input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleMediaUpload}
+                    className="max-w-xs mx-auto"
+                  />
+                  <p className="text-xs text-muted-foreground text-center">
+                    Or use AI to generate new images or enhance existing ones
+                  </p>
+                  <p className="text-xs text-amber-600 text-center">
+                    ⚠️ AI service requires valid API endpoint configuration
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -286,35 +403,120 @@ export function InstagramPublisher({
                       style={{ maxHeight: '300px' }}
                     />
                   ) : (
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-full rounded-lg"
-                      style={{ maxHeight: '300px', objectFit: 'cover' }}
-                    />
+                    <div className="relative">
+                      <img
+                        src={previewUrl}
+                        alt="Preview"
+                        className="w-full rounded-lg"
+                        style={{ maxHeight: '300px', objectFit: 'cover' }}
+                      />
+                      {isAIProcessed && (
+                        <div className="absolute top-2 left-2">
+                          <Badge variant="default" className="bg-purple-600 hover:bg-purple-700 text-xs">
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            AI Enhanced
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
                   )}
                   <Button
                     variant="destructive"
                     size="sm"
                     className="absolute top-2 right-2"
-                    onClick={() => setPreviewUrl(null)}
+                    onClick={() => {
+                      setPreviewUrl(null);
+                      setIsAIProcessed(false);
+                      setAiProcessedImage('');
+                    }}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="outline">
                     {mediaType === 'video' ? <Video className="h-3 w-3 mr-1" /> : <Image className="h-3 w-3 mr-1" />}
                     {mediaType === 'video' ? 'Video' : 'Image'}
                   </Badge>
+                  {isAIProcessed && (
+                    <Badge variant="default" className="bg-purple-600 hover:bg-purple-700">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI Enhanced
+                    </Badge>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => {
                     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
                     fileInput?.click();
                   }}>
                     Change Media
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAIPrompt(!showAIPrompt)}
+                    className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                  >
+                    <Wand2 className="h-3 w-3 mr-1" />
+                    AI Edit
+                  </Button>
                 </div>
+
+                {/* AI Prompt Section */}
+                {showAIPrompt && (
+                  <div className="space-y-3 p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="text-sm font-medium">AI Image Enhancement</span>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ai-prompt" className="text-sm">
+                        Enter a prompt to generate or enhance your image:
+                      </Label>
+                      <Textarea
+                        id="ai-prompt"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        placeholder="e.g., Freshly brewed coffee, Artisan handmade ceramic mug, Beautiful sunset over mountains..."
+                        rows={3}
+                        className="resize-none"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {aiPrompt.length}/200 characters
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={handleAIProcessing}
+                        disabled={!aiPrompt.trim() || isProcessingAI}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700"
+                      >
+                        {isProcessingAI ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="h-3 w-3 mr-1" />
+                            Apply AI Magic
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowAIPrompt(false);
+                          setAiPrompt('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -355,6 +557,29 @@ export function InstagramPublisher({
         </Card>
       </div>
 
+      {/* AI Processing Progress */}
+      {isProcessingAI && (
+        <Card className="border-purple-200 dark:border-purple-800">
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 animate-spin text-purple-600" />
+                  Processing with AI...
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  Please wait
+                </span>
+              </div>
+              <Progress value={undefined} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                Applying AI enhancements to your image...
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Publishing Progress */}
       {isPublishing && (
         <Card className="border-blue-200 dark:border-blue-800">
@@ -388,7 +613,9 @@ export function InstagramPublisher({
                 <div className="flex-1">
                   <p className="text-sm font-medium">Publishing Failed</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {error.includes('API') || error.includes('server') || error.includes('503') || error.includes('502') || error.includes('500')
+                    {error.includes('AI') || error.includes('helper') || error.includes('processing')
+                      ? 'AI image processing failed. Please check your prompt and try again.'
+                      : error.includes('API') || error.includes('server') || error.includes('503') || error.includes('502') || error.includes('500')
                       ? 'The Instagram API service is currently unavailable. Please try again in a few minutes.'
                       : error.includes('Network') || error.includes('fetch')
                       ? 'Network connection failed. Please check your internet connection.'
@@ -432,7 +659,7 @@ export function InstagramPublisher({
       <div className="flex justify-center">
         <Button
           onClick={handlePublish}
-          disabled={!isReady || isPublishing}
+          disabled={!isReady || isPublishing || isProcessingAI}
           size="lg"
           className="min-w-48"
         >

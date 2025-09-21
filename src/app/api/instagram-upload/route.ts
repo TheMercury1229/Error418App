@@ -12,36 +12,42 @@ cloudinary.config({
 async function handleImageUpload(formData: FormData): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     const imageFile = formData.get("image") as File | null;
+    const base64Image = formData.get("base64_image") as string | null;
 
-    if (!imageFile) {
-      return { success: false, error: "No image file provided" };
-    }
+    let base64String: string;
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(imageFile.type)) {
-      return { success: false, error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed." };
-    }
+    if (base64Image) {
+      // Handle base64 image from AI helper
+      console.log("Processing base64 image from AI helper");
+      base64String = base64Image;
+    } else if (imageFile) {
+      // Handle regular file upload
+      console.log("Processing regular image file");
 
-    // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (imageFile.size > maxSize) {
-      return { success: false, error: "File too large. Maximum size is 10MB." };
-    }
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(imageFile.type)) {
+        return { success: false, error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed." };
+      }
 
-    // Upload to Cloudinary
-    console.log("Uploading to Cloudinary:", {
-      name: imageFile.name,
-      type: imageFile.type,
-      size: imageFile.size
-    });
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (imageFile.size > maxSize) {
+        return { success: false, error: "File too large. Maximum size is 10MB." };
+      }
 
-    try {
       // Convert file to base64 for Cloudinary upload
       const arrayBuffer = await imageFile.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      const base64String = `data:${imageFile.type};base64,${buffer.toString('base64')}`;
+      base64String = `data:${imageFile.type};base64,${buffer.toString('base64')}`;
+    } else {
+      return { success: false, error: "No image file or base64 image provided" };
+    }
 
+    // Upload to Cloudinary
+    console.log("Uploading to Cloudinary");
+
+    try {
       // Upload to Cloudinary with specific folder and transformations
       const uploadResult = await new Promise((resolve, reject) => {
         cloudinary.uploader.upload(

@@ -5,8 +5,7 @@ let PrismaClient: any;
 let prisma: any;
 
 try {
-  const prismaModule = require('@prisma/client');
-  PrismaClient = prismaModule.PrismaClient;
+  const { PrismaClient } = require('@prisma/client');
   prisma = new PrismaClient();
   console.log('Prisma client initialized successfully');
 } catch (error) {
