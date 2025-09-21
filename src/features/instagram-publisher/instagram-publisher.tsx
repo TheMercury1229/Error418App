@@ -31,7 +31,7 @@ import { toast } from "sonner";
 
 interface InstagramPublisherProps {
   mediaUrl?: string;
-  mediaType?: 'image' | 'video';
+  mediaType?: "image" | "video";
   initialCaption?: string;
   onPublishSuccess?: (result: any) => void;
   onPublishError?: (error: string) => void;
@@ -41,17 +41,19 @@ interface InstagramPublisherProps {
 export function InstagramPublisher({
   mediaUrl,
   mediaType,
-  initialCaption = '',
+  initialCaption = "",
   onPublishSuccess,
   onPublishError,
-  clerkId = 'user123', // TODO: Get from auth context
+  clerkId = "user123", // TODO: Get from auth context
 }: InstagramPublisherProps) {
   const [caption, setCaption] = useState(initialCaption);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishProgress, setPublishProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [apiStatus, setApiStatus] = useState<'checking' | 'ready' | 'error'>('checking');
+  const [apiStatus, setApiStatus] = useState<"checking" | "ready" | "error">(
+    "checking"
+  );
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // AI Helper state
@@ -72,28 +74,28 @@ export function InstagramPublisher({
 
   const checkApiStatus = async () => {
     try {
-      setApiStatus('checking');
+      setApiStatus("checking");
       const isReady = await instagramService.isReady();
-      setApiStatus(isReady ? 'ready' : 'error');
+      setApiStatus(isReady ? "ready" : "error");
     } catch (error) {
-      console.error('API status check failed:', error);
-      setApiStatus('error');
+      console.error("API status check failed:", error);
+      setApiStatus("error");
     }
   };
 
   const handlePublish = async () => {
     if (!previewUrl) {
-      setError('No media selected for publishing');
+      setError("No media selected for publishing");
       return;
     }
 
     if (!caption.trim()) {
-      setError('Please add a caption for your post');
+      setError("Please add a caption for your post");
       return;
     }
 
-    if (apiStatus !== 'ready') {
-      setError('Instagram API is not available');
+    if (apiStatus !== "ready") {
+      setError("Instagram API is not available");
       return;
     }
 
@@ -107,7 +109,7 @@ export function InstagramPublisher({
       setPublishProgress(25);
 
       let result;
-      if (mediaType === 'video') {
+      if (mediaType === "video") {
         result = await instagramService.postVideo(previewUrl, caption, true);
       } else {
         result = await instagramService.postPhoto(previewUrl, caption);
@@ -124,32 +126,36 @@ export function InstagramPublisher({
             await instagramDbService.createInstagramPost({
               mediaId: result.media_id,
               containerId: result.container_id,
-              mediaType: mediaType === 'video' ? 'VIDEO' : 'IMAGE',
+              mediaType: mediaType === "video" ? "VIDEO" : "IMAGE",
               mediaUrl: previewUrl,
               caption: caption,
               clerkId: clerkId,
             });
 
-            console.log('Instagram post saved to database:', result.media_id);
+            console.log("Instagram post saved to database:", result.media_id);
           }
         } catch (dbError) {
-          console.error('Failed to save post to database:', dbError);
+          console.error("Failed to save post to database:", dbError);
           // Don't fail the entire operation if database save fails
           // This is expected if Prisma client is not properly generated
         }
 
-        setSuccess(`Successfully published to Instagram! Media ID: ${result.media_id}`);
+        setSuccess(
+          `Successfully published to Instagram! Media ID: ${result.media_id}`
+        );
 
         if (onPublishSuccess) {
           onPublishSuccess(result);
         }
       } else {
-        throw new Error(result.error || 'Publishing failed');
+        throw new Error(result.error || "Publishing failed");
       }
-
     } catch (error) {
-      console.error('Publishing failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to publish to Instagram';
+      console.error("Publishing failed:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to publish to Instagram";
       setError(errorMessage);
 
       if (onPublishError) {
@@ -161,7 +167,9 @@ export function InstagramPublisher({
     }
   };
 
-  const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (file) {
       try {
@@ -171,10 +179,10 @@ export function InstagramPublisher({
 
         // Upload file to get public URL
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append("image", file);
 
-        const response = await fetch('/api/instagram-upload', {
-          method: 'POST',
+        const response = await fetch("/api/instagram-upload", {
+          method: "POST",
           body: formData,
         });
 
@@ -184,22 +192,22 @@ export function InstagramPublisher({
           // Use the public URL for Instagram API
           setPreviewUrl(result.url);
           setIsAIProcessed(false); // Reset AI processed flag for new uploads
-          console.log('Image uploaded successfully:', result.url);
+          console.log("Image uploaded successfully:", result.url);
         } else {
-          setError(`Upload failed: ${result.error || 'Unknown error'}`);
+          setError(`Upload failed: ${result.error || "Unknown error"}`);
           // Keep the preview URL for display but show error
-          console.error('Upload error details:', result.error);
+          console.error("Upload error details:", result.error);
         }
       } catch (error) {
-        console.error('Upload error:', error);
-        setError('Failed to upload image. Please try again.');
+        console.error("Upload error:", error);
+        setError("Failed to upload image. Please try again.");
       }
     }
   };
 
   const handleAIProcessing = async () => {
     if (!previewUrl || !aiPrompt.trim()) {
-      setError('Please select an image and enter a prompt for AI processing');
+      setError("Please select an image and enter a prompt for AI processing");
       return;
     }
 
@@ -207,10 +215,12 @@ export function InstagramPublisher({
     setError(null);
 
     try {
-      console.log('Starting AI processing:', {
+      console.log("Starting AI processing:", {
         prompt: aiPrompt,
         imageUrl: previewUrl,
-        isCloudinaryUrl: previewUrl.includes('cloudinary') || previewUrl.includes('res.cloudinary.com')
+        isCloudinaryUrl:
+          previewUrl.includes("cloudinary") ||
+          previewUrl.includes("res.cloudinary.com"),
       });
 
       // Call AI helper service with Cloudinary URL
@@ -220,33 +230,39 @@ export function InstagramPublisher({
       });
 
       if (aiResult.success && aiResult.imageBlob) {
-        console.log('AI processing successful:', {
+        console.log("AI processing successful:", {
           blobSize: aiResult.imageBlob.size,
           blobType: aiResult.imageBlob.type,
-          caption: aiResult.caption
+          caption: aiResult.caption,
         });
 
         // Create a temporary preview URL from the blob for immediate display
-        const tempPreviewUrl = aiImageHelperService.blobToObjectURL(aiResult.imageBlob);
+        const tempPreviewUrl = aiImageHelperService.blobToObjectURL(
+          aiResult.imageBlob
+        );
 
         // Upload the processed image to get permanent Cloudinary URL
         const processedFormData = new FormData();
-        processedFormData.append('image', aiResult.imageBlob, 'ai-processed-image.jpg');
+        processedFormData.append(
+          "image",
+          aiResult.imageBlob,
+          "ai-processed-image.jpg"
+        );
 
-        console.log('Uploading processed image to Cloudinary...');
+        console.log("Uploading processed image to Cloudinary...");
 
-        const uploadResponse = await fetch('/api/instagram-upload', {
-          method: 'POST',
+        const uploadResponse = await fetch("/api/instagram-upload", {
+          method: "POST",
           body: processedFormData,
         });
 
         const uploadResult = await uploadResponse.json();
 
         if (uploadResult.success && uploadResult.url) {
-          console.log('Upload successful:', {
+          console.log("Upload successful:", {
             newCloudinaryUrl: uploadResult.url,
             tempPreviewUrl: tempPreviewUrl,
-            isValidUrl: uploadResult.url.startsWith('http')
+            isValidUrl: uploadResult.url.startsWith("http"),
           });
 
           // Update preview with the new Cloudinary URL
@@ -259,30 +275,54 @@ export function InstagramPublisher({
 
           // Force a small delay to ensure state updates are processed
           setTimeout(() => {
-            console.log('AI processing completed - preview updated to:', uploadResult.url);
-            toast.success(`AI processing completed successfully! ${aiResult.caption ? `Caption: ${aiResult.caption}` : ''}`);
+            console.log(
+              "AI processing completed - preview updated to:",
+              uploadResult.url
+            );
+            toast.success(
+              `AI processing completed successfully! ${
+                aiResult.caption ? `Caption: ${aiResult.caption}` : ""
+              }`
+            );
             setShowAIPrompt(false);
-            setAiPrompt('');
+            setAiPrompt("");
           }, 100);
         } else {
           // Clean up temporary blob URL on error
           URL.revokeObjectURL(tempPreviewUrl);
-          throw new Error(uploadResult.error || 'Failed to upload processed image');
+          throw new Error(
+            uploadResult.error || "Failed to upload processed image"
+          );
         }
       } else {
-        throw new Error(aiResult.error || 'AI processing failed - no image returned');
+        throw new Error(
+          aiResult.error || "AI processing failed - no image returned"
+        );
       }
     } catch (error) {
-      console.error('AI processing error:', error);
-      let errorMessage = 'Failed to process image with AI';
+      console.error("AI processing error:", error);
+      let errorMessage = "Failed to process image with AI";
 
       if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
-          errorMessage = 'AI service is currently unavailable. Please check your internet connection and try again.';
-        } else if (error.message.includes('404') || error.message.includes('Not Found')) {
-          errorMessage = 'AI service endpoint not found. Please contact support.';
-        } else if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) {
-          errorMessage = 'AI service is temporarily down. Please try again in a few minutes.';
+        if (
+          error.message.includes("Failed to fetch") ||
+          error.message.includes("ERR_NAME_NOT_RESOLVED")
+        ) {
+          errorMessage =
+            "AI service is currently unavailable. Please check your internet connection and try again.";
+        } else if (
+          error.message.includes("404") ||
+          error.message.includes("Not Found")
+        ) {
+          errorMessage =
+            "AI service endpoint not found. Please contact support.";
+        } else if (
+          error.message.includes("500") ||
+          error.message.includes("502") ||
+          error.message.includes("503")
+        ) {
+          errorMessage =
+            "AI service is temporarily down. Please try again in a few minutes.";
         } else {
           errorMessage = error.message;
         }
@@ -303,44 +343,40 @@ export function InstagramPublisher({
     setSuccess(null);
   };
 
-  const isReady = apiStatus === 'ready' && previewUrl && caption.trim() && !isProcessingAI;
+  const isReady =
+    apiStatus === "ready" && previewUrl && caption.trim() && !isProcessingAI;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Instagram className="h-8 w-8 text-pink-600" />
-            Instagram Publisher
-          </h1>
-          <p className="text-muted-foreground">
-            Publish photos and videos directly to Instagram
-          </p>
-        </div>
-
         <div className="flex items-center gap-2">
-          <Badge variant={apiStatus === 'ready' ? 'default' : 'destructive'}>
-            {apiStatus === 'ready' && <CheckCircle className="h-3 w-3 mr-1" />}
-            {apiStatus === 'error' && <AlertCircle className="h-3 w-3 mr-1" />}
-            {apiStatus === 'checking' && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-            {apiStatus === 'ready' && 'API Ready'}
-            {apiStatus === 'error' && 'API Error'}
-            {apiStatus === 'checking' && 'Checking...'}
+          <Badge variant={apiStatus === "ready" ? "default" : "destructive"}>
+            {apiStatus === "ready" && <CheckCircle className="h-3 w-3 mr-1" />}
+            {apiStatus === "error" && <AlertCircle className="h-3 w-3 mr-1" />}
+            {apiStatus === "checking" && (
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            )}
+            {apiStatus === "ready" && "API Ready"}
+            {apiStatus === "error" && "API Error"}
+            {apiStatus === "checking" && "Checking..."}
           </Badge>
         </div>
       </div>
 
       {/* API Status Alert */}
-      {apiStatus === 'error' && (
+      {apiStatus === "error" && (
         <Card className="border-red-200 dark:border-red-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
               <AlertCircle className="h-4 w-4" />
               <div className="flex-1">
-                <p className="text-sm font-medium">Instagram API Service Unavailable</p>
+                <p className="text-sm font-medium">
+                  Instagram API Service Unavailable
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  The Instagram API service is currently down. This could be due to:
+                  The Instagram API service is currently down. This could be due
+                  to:
                 </p>
                 <ul className="text-xs text-muted-foreground mt-1 ml-4 list-disc">
                   <li>Server maintenance or high traffic</li>
@@ -348,7 +384,8 @@ export function InstagramPublisher({
                   <li>Network connectivity issues</li>
                 </ul>
                 <p className="text-xs text-muted-foreground mt-1">
-                  The service usually recovers automatically within a few minutes.
+                  The service usually recovers automatically within a few
+                  minutes.
                 </p>
               </div>
               <Button onClick={checkApiStatus} variant="outline" size="sm">
@@ -388,13 +425,13 @@ export function InstagramPublisher({
             ) : (
               <div className="space-y-4">
                 <div className="relative">
-                  {mediaType === 'video' ? (
+                  {mediaType === "video" ? (
                     <video
                       key={previewUrl} // Force re-render when URL changes
                       src={previewUrl}
                       controls
                       className="w-full rounded-lg"
-                      style={{ maxHeight: '300px' }}
+                      style={{ maxHeight: "300px" }}
                     />
                   ) : (
                     <img
@@ -402,13 +439,19 @@ export function InstagramPublisher({
                       src={previewUrl}
                       alt="Preview"
                       className="w-full rounded-lg"
-                      style={{ maxHeight: '300px', objectFit: 'cover' }}
+                      style={{ maxHeight: "300px", objectFit: "cover" }}
                       onError={(e) => {
-                        console.error('Image preview failed to load:', previewUrl);
-                        setError('Failed to load image preview');
+                        console.error(
+                          "Image preview failed to load:",
+                          previewUrl
+                        );
+                        setError("Failed to load image preview");
                       }}
                       onLoad={() => {
-                        console.log('Image preview loaded successfully:', previewUrl);
+                        console.log(
+                          "Image preview loaded successfully:",
+                          previewUrl
+                        );
                       }}
                     />
                   )}
@@ -424,19 +467,32 @@ export function InstagramPublisher({
 
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="outline">
-                    {mediaType === 'video' ? <Video className="h-3 w-3 mr-1" /> : <Image className="h-3 w-3 mr-1" />}
-                    {mediaType === 'video' ? 'Video' : 'Image'}
+                    {mediaType === "video" ? (
+                      <Video className="h-3 w-3 mr-1" />
+                    ) : (
+                      <Image className="h-3 w-3 mr-1" />
+                    )}
+                    {mediaType === "video" ? "Video" : "Image"}
                   </Badge>
                   {isAIProcessed && (
-                    <Badge variant="default" className="bg-purple-600 hover:bg-purple-700">
+                    <Badge
+                      variant="default"
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
                       <Sparkles className="h-3 w-3 mr-1" />
                       AI Enhanced
                     </Badge>
                   )}
-                  <Button variant="outline" size="sm" onClick={() => {
-                    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                    fileInput?.click();
-                  }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const fileInput = document.querySelector(
+                        'input[type="file"]'
+                      ) as HTMLInputElement;
+                      fileInput?.click();
+                    }}
+                  >
                     Change Media
                   </Button>
                   <Button
@@ -455,7 +511,9 @@ export function InstagramPublisher({
                   <div className="space-y-3 p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
                     <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
                       <Sparkles className="h-4 w-4" />
-                      <span className="text-sm font-medium">AI Image Enhancement</span>
+                      <span className="text-sm font-medium">
+                        AI Image Enhancement
+                      </span>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="ai-prompt" className="text-sm">
@@ -497,7 +555,7 @@ export function InstagramPublisher({
                         size="sm"
                         onClick={() => {
                           setShowAIPrompt(false);
-                          setAiPrompt('');
+                          setAiPrompt("");
                         }}
                       >
                         Cancel
@@ -601,14 +659,19 @@ export function InstagramPublisher({
                 <div className="flex-1">
                   <p className="text-sm font-medium">Publishing Failed</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {error.includes('AI') || error.includes('helper') || error.includes('processing')
-                      ? 'AI image processing failed. Please check your prompt and try again.'
-                      : error.includes('API') || error.includes('server') || error.includes('503') || error.includes('502') || error.includes('500')
-                      ? 'The Instagram API service is currently unavailable. Please try again in a few minutes.'
-                      : error.includes('Network') || error.includes('fetch')
-                      ? 'Network connection failed. Please check your internet connection.'
-                      : error
-                    }
+                    {error.includes("AI") ||
+                    error.includes("helper") ||
+                    error.includes("processing")
+                      ? "AI image processing failed. Please check your prompt and try again."
+                      : error.includes("API") ||
+                        error.includes("server") ||
+                        error.includes("503") ||
+                        error.includes("502") ||
+                        error.includes("500")
+                      ? "The Instagram API service is currently unavailable. Please try again in a few minutes."
+                      : error.includes("Network") || error.includes("fetch")
+                      ? "Network connection failed. Please check your internet connection."
+                      : error}
                   </p>
                 </div>
               </div>
@@ -670,7 +733,7 @@ export function InstagramPublisher({
         type="file"
         accept="image/*,video/*"
         onChange={handleMediaUpload}
-        style={{ display: 'none' }}
+        style={{ display: "none" }}
       />
     </div>
   );

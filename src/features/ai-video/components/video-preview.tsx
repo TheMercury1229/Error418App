@@ -139,18 +139,6 @@ export function VideoPreview({ video, isGenerating }: VideoPreviewProps) {
               <Badge variant="secondary">{video.progress}%</Badge>
             </div>
             <Progress value={video.progress} className="h-2" />
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-blue-500" />
-                <span className="text-muted-foreground">Duration:</span>
-                <span className="font-medium">{video.duration}s</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-purple-500" />
-                <span className="text-muted-foreground">Style:</span>
-                <span className="font-medium capitalize">{video.style}</span>
-              </div>
-            </div>
             <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded text-xs text-blue-700 dark:text-blue-300">
               💡 This usually takes {video.duration * 2} seconds. You can
               continue using other features while we generate your video.
@@ -301,21 +289,6 @@ export function VideoPreview({ video, isGenerating }: VideoPreviewProps) {
             <p className="text-sm text-muted-foreground line-clamp-2">
               {video.prompt}
             </p>
-
-            <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t">
-              <div>
-                <span className="text-muted-foreground">Style:</span>
-                <span className="ml-2 font-medium capitalize">
-                  {video.style}
-                </span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Created:</span>
-                <span className="ml-2 font-medium">
-                  {video.createdAt.toLocaleDateString()}
-                </span>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -338,27 +311,6 @@ export function VideoPreview({ video, isGenerating }: VideoPreviewProps) {
             {copied ? "Copied!" : "Share"}
           </Button>
         </div>
-
-        {/* Download Options */}
-        <Card>
-          <CardContent className="p-4">
-            <h4 className="text-sm font-medium mb-3">Download Options</h4>
-            <div className="grid grid-cols-1 gap-2">
-              <Button variant="ghost" size="sm" className="justify-start">
-                <Download className="h-4 w-4 mr-2" />
-                MP4 ({video.quality.toUpperCase()}) - Best quality
-              </Button>
-              <Button variant="ghost" size="sm" className="justify-start">
-                <Download className="h-4 w-4 mr-2" />
-                WebM - Web optimized
-              </Button>
-              <Button variant="ghost" size="sm" className="justify-start">
-                <Download className="h-4 w-4 mr-2" />
-                GIF - Social media ready
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
