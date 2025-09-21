@@ -234,7 +234,7 @@ export function VideoTranslator() {
                   Click to upload a video
                 </p>
                 <p className="text-sm text-gray-500">
-                  Supports MP4, AVI, MOV, WMV, FLV, WebM, MKV (max 200MB)
+                  Supports MP4, AVI, MOV, WMV, FLV, WebM, MKV (max 2MB/10sec)
                 </p>
               </label>
             </div>
