@@ -26,7 +26,12 @@ import {
   Link,
   Share2,
   ExternalLink,
+  Sparkles,
 } from "lucide-react";
+import {
+  enhanceContentWithAI,
+  generateContentFromFileName,
+} from "@/services/content-enhancement.service";
 
 interface UploadedVideo {
   videoId: string;
@@ -45,6 +50,7 @@ export function YouTubeUploader() {
     null
   );
   const [error, setError] = useState<string | null>(null);
+  const [enhancing, setEnhancing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,6 +161,7 @@ export function YouTubeUploader() {
     setUploadedVideo(null);
     setError(null);
     setUploadProgress(0);
+    setEnhancing(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -165,6 +172,45 @@ export function YouTubeUploader() {
       .writeText(text)
       .then(() => alert("Link copied to clipboard!"))
       .catch((err) => console.error("Failed to copy:", err));
+  };
+
+  const handleEnhanceContent = async () => {
+    if (!title && !description && !tags && !selectedFile) {
+      setError("Please provide some content or select a video file to enhance");
+      return;
+    }
+
+    setEnhancing(true);
+    setError(null);
+
+    try {
+      let result;
+
+      if (!title && !description && !tags && selectedFile) {
+        // Generate content from filename if no existing content
+        result = await generateContentFromFileName(selectedFile.name);
+      } else {
+        // Enhance existing content
+        result = await enhanceContentWithAI({
+          title,
+          description,
+          tags,
+          videoFileName: selectedFile?.name,
+        });
+      }
+
+      if (result.success) {
+        setTitle(result.enhancedTitle);
+        setDescription(result.enhancedDescription);
+        setTags(result.enhancedTags);
+      } else {
+        setError(result.error || "Failed to enhance content");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to enhance content");
+    } finally {
+      setEnhancing(false);
+    }
   };
 
   // Render uploaded video success
@@ -337,6 +383,32 @@ export function YouTubeUploader() {
               <ToggleGroupItem value="unlisted">Unlisted</ToggleGroupItem>
               <ToggleGroupItem value="public">Public</ToggleGroupItem>
             </ToggleGroup>
+          </div>
+
+          {/* AI Enhancement Button */}
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              onClick={handleEnhanceContent}
+              disabled={enhancing || uploading}
+              className="w-full"
+            >
+              {enhancing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enhancing with AI...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Enhance using AI
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-1 text-center">
+              AI will optimize your title, description, and tags for better
+              reach
+            </p>
           </div>
         </div>
 

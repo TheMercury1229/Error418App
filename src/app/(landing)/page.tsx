@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,17 +73,17 @@ export default function LandingPage() {
           <div className="flex items-center space-x-3">
             <ModeToggle />
             <SignedOut>
-              <SignInButton mode="modal">
+              <Link href="/sign-in">
                 <Button variant="ghost" size="sm">
                   Sign In
                 </Button>
-              </SignInButton>
-              <SignInButton mode="modal">
+              </Link>
+              <Link href="/sign-in">
                 <Button size="sm">
                   Get Started
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </SignInButton>
+              </Link>
             </SignedOut>
             <SignedIn>
               <Button asChild>
@@ -126,7 +126,7 @@ export default function LandingPage() {
 
             <div className="mt-10 flex items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom duration-700 delay-700">
               <SignedOut>
-                <SignInButton mode="modal">
+                <Link href="/sign-in">
                   <Button
                     size="lg"
                     className="h-12 px-8 transition-all duration-300 hover:scale-105 hover:shadow-lg"
@@ -134,7 +134,7 @@ export default function LandingPage() {
                     Start Creating Free
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                   </Button>
-                </SignInButton>
+                </Link>
               </SignedOut>
               <SignedIn>
                 <Button
@@ -480,12 +480,12 @@ export default function LandingPage() {
 
           <div className="mt-16 text-center">
             <SignedOut>
-              <SignInButton mode="modal">
+              <Link href="/sign-in">
                 <Button size="lg">
                   Start Your Journey
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-              </SignInButton>
+              </Link>
             </SignedOut>
             <SignedIn>
               <Button size="lg" asChild>
@@ -542,12 +542,12 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <SignedOut>
-                <SignInButton mode="modal">
+                <Link href="/sign-in">
                   <Button size="lg" variant="secondary">
                     Get Started Free
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
-                </SignInButton>
+                </Link>
               </SignedOut>
               <SignedIn>
                 <Button size="lg" variant="secondary" asChild>
