@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { v2 as cloudinary } from 'cloudinary';
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import cloudinary, { uploadToCloudinary } from "@/lib/cloudinary";
 
 // Function to handle image uploads for Instagram using Cloudinary
-async function handleImageUpload(formData: FormData): Promise<{ success: boolean; url?: string; error?: string }> {
+async function handleImageUpload(
+  formData: FormData
+): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     const imageFile = formData.get("image") as File | null;
 
@@ -18,9 +13,18 @@ async function handleImageUpload(formData: FormData): Promise<{ success: boolean
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
     if (!allowedTypes.includes(imageFile.type)) {
-      return { success: false, error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed." };
+      return {
+        success: false,
+        error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.",
+      };
     }
 
     // Validate file size (max 10MB)
@@ -33,48 +37,51 @@ async function handleImageUpload(formData: FormData): Promise<{ success: boolean
     console.log("Uploading to Cloudinary:", {
       name: imageFile.name,
       type: imageFile.type,
-      size: imageFile.size
+      size: imageFile.size,
     });
 
     try {
       // Convert file to base64 for Cloudinary upload
       const arrayBuffer = await imageFile.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      const base64String = `data:${imageFile.type};base64,${buffer.toString('base64')}`;
+      const base64String = `data:${imageFile.type};base64,${buffer.toString(
+        "base64"
+      )}`;
 
-      // Upload to Cloudinary with specific folder and transformations
-      const uploadResult = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload(
-          base64String,
-          {
-            folder: 'instagram_uploads',
-            resource_type: 'image',
-            transformation: [
-              { width: 1080, height: 1080, crop: 'limit' },
-              { quality: 'auto' }
-            ]
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
+      // Upload to Cloudinary using the centralized helper
+      const uploadResult = await uploadToCloudinary(base64String, {
+        folder: "instagram_uploads",
+        transformation: {
+          width: 1080,
+          height: 1080,
+          crop: "limit",
+          quality: "auto",
+        },
       });
 
-      const cloudinaryResult = uploadResult as any;
-      const publicUrl = cloudinaryResult.secure_url;
+      if (!uploadResult.success) {
+        console.error("Cloudinary upload error:", uploadResult.error);
+        return {
+          success: false,
+          error:
+            uploadResult.error ||
+            "Failed to upload to Cloudinary. Please check your Cloudinary configuration.",
+        };
+      }
 
-      console.log("Image uploaded to Cloudinary successfully:", publicUrl);
-      return { success: true, url: publicUrl };
-
+      console.log(
+        "Image uploaded to Cloudinary successfully:",
+        uploadResult.url
+      );
+      return { success: true, url: uploadResult.url };
     } catch (cloudinaryError) {
       console.error("Cloudinary upload error:", cloudinaryError);
       return {
         success: false,
-        error: "Failed to upload to Cloudinary. Please check your Cloudinary configuration."
+        error:
+          "Failed to upload to Cloudinary. Please check your Cloudinary configuration.",
       };
     }
-
   } catch (error) {
     console.error("Image upload error:", error);
     return { success: false, error: "Failed to upload image" };
@@ -107,10 +114,15 @@ export async function POST(req: NextRequest) {
     console.log("Processing image upload for Instagram");
 
     // Check if Cloudinary is configured
-    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
       return NextResponse.json(
         {
-          error: "Cloudinary not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env file."
+          error:
+            "Cloudinary not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env file.",
         },
         { status: 500 }
       );
@@ -122,7 +134,7 @@ export async function POST(req: NextRequest) {
         success: true,
         url: result.url,
         type: "image",
-        message: "Image uploaded successfully"
+        message: "Image uploaded successfully",
       });
     } else {
       return NextResponse.json(
@@ -130,13 +142,13 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
   } catch (error) {
     console.error("Instagram upload error:", error);
 
     return NextResponse.json(
       {
-        error: "Upload failed: " + ((error as Error).message || "Unknown error"),
+        error:
+          "Upload failed: " + ((error as Error).message || "Unknown error"),
       },
       { status: 500 }
     );
