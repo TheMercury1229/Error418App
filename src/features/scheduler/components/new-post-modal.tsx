@@ -129,7 +129,7 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
           // Check if API is ready
           const isApiReady = await instagramService.isReady();
           if (!isApiReady) {
-            throw new Error('Instagram API is not available');
+            throw new Error("Instagram API is not available");
           }
 
           // Get the first image for Instagram publishing
@@ -147,18 +147,21 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
             await instagramDbService.createInstagramPost({
               mediaId: result.media_id,
               containerId: result.container_id,
-              mediaType: 'IMAGE',
+              mediaType: "IMAGE",
               mediaUrl: imageUrl,
               caption: instagramCaption || caption,
-              clerkId: 'user123', // TODO: Get from auth context
+              clerkId: "user123", // TODO: Get from auth context
             });
 
-            console.log('Successfully published to Instagram:', result.media_id);
+            console.log(
+              "Successfully published to Instagram:",
+              result.media_id
+            );
           } else {
-            throw new Error(result.error || 'Failed to publish to Instagram');
+            throw new Error(result.error || "Failed to publish to Instagram");
           }
         } catch (instagramError) {
-          console.error('Instagram publishing failed:', instagramError);
+          console.error("Instagram publishing failed:", instagramError);
           // Don't fail the entire operation if Instagram publishing fails
         } finally {
           setIsPublishingToInstagram(false);
@@ -181,7 +184,7 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
       resetForm();
       onOpenChange(false);
     } catch (error) {
-      console.error('Action failed:', error);
+      console.error("Action failed:", error);
     } finally {
       setIsLoading(false);
     }
@@ -332,9 +335,14 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
                 <Checkbox
                   id="publish-instagram"
                   checked={publishToInstagram}
-                  onCheckedChange={setPublishToInstagram}
+                  onCheckedChange={(checked) =>
+                    setPublishToInstagram(checked === true)
+                  }
                 />
-                <Label htmlFor="publish-instagram" className="flex items-center gap-2">
+                <Label
+                  htmlFor="publish-instagram"
+                  className="flex items-center gap-2"
+                >
                   <Instagram className="h-4 w-4 text-pink-600" />
                   Also publish to Instagram
                 </Label>
