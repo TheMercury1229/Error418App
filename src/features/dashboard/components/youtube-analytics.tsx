@@ -247,8 +247,6 @@ export function YouTubeAnalytics() {
       >
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="audience">Audience</TabsTrigger>
           <TabsTrigger value="upload">Upload</TabsTrigger>
         </TabsList>
 
@@ -381,50 +379,8 @@ export function YouTubeAnalytics() {
         </TabsContent>
 
         {/* Performance Tab */}
-        <TabsContent value="performance">
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Video Performance</CardTitle>
-              <CardDescription>
-                Top performing videos in the last 30 days
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-10">
-                <Youtube className="mx-auto h-10 w-10 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">
-                  Performance data coming soon
-                </h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  This section will display detailed video performance metrics
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Audience Tab */}
-        <TabsContent value="audience">
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Audience Demographics</CardTitle>
-              <CardDescription>
-                Learn about your audience's age, location, and viewing habits
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-10">
-                <Users className="mx-auto h-10 w-10 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">
-                  Audience data coming soon
-                </h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  This section will display detailed audience demographics
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Upload Tab */}
         <TabsContent value="upload" className="mt-4">

@@ -278,9 +278,7 @@ export function InstagramAnalytics() {
       >
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="engagement">Engagement</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -452,27 +450,6 @@ export function InstagramAnalytics() {
         </TabsContent>
 
         {/* Performance Tab */}
-        <TabsContent value="performance">
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Post Performance</CardTitle>
-              <CardDescription>
-                Detailed performance metrics for your Instagram content
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-10">
-                <Instagram className="mx-auto h-10 w-10 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">
-                  Performance data coming soon
-                </h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  This section will display detailed post performance metrics
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Engagement Tab */}
         <TabsContent value="engagement">
@@ -533,27 +510,6 @@ export function InstagramAnalytics() {
         </TabsContent>
 
         {/* Insights Tab */}
-        <TabsContent value="insights">
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Instagram Insights</CardTitle>
-              <CardDescription>
-                AI-powered insights and recommendations for your Instagram
-                strategy
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-10">
-                <TrendingUp className="mx-auto h-10 w-10 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">Insights coming soon</h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  This section will provide AI-powered insights and
-                  recommendations
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
