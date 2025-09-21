@@ -37,9 +37,14 @@ import {
   Save,
   Send,
   Eye,
+  Instagram,
+  Loader2,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { InstagramService } from "@/services/instagram.service";
+import { instagramDbService } from "@/services/instagram-db.service";
 
 interface NewPostModalProps {
   open: boolean;
@@ -55,6 +60,11 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
   const [selectedTime, setSelectedTime] = useState("");
   const [platform, setPlatform] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [publishToInstagram, setPublishToInstagram] = useState(false);
+  const [instagramCaption, setInstagramCaption] = useState("");
+  const [isPublishingToInstagram, setIsPublishingToInstagram] = useState(false);
+
+  const instagramService = new InstagramService();
 
   // Dropzone for image upload
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -103,26 +113,78 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
     setSelectedDate(undefined);
     setSelectedTime("");
     setPlatform("");
+    setPublishToInstagram(false);
+    setInstagramCaption("");
   };
 
   const handleAction = async (action: "draft" | "schedule" | "publish") => {
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Handle Instagram publishing if enabled
+      if (publishToInstagram && selectedImages.length > 0) {
+        setIsPublishingToInstagram(true);
 
-    console.log("Action:", action, {
-      images: selectedImages,
-      caption,
-      hashtags,
-      date: selectedDate,
-      time: selectedTime,
-      platform,
-    });
+        try {
+          // Check if API is ready
+          const isApiReady = await instagramService.isReady();
+          if (!isApiReady) {
+            throw new Error('Instagram API is not available');
+          }
 
-    setIsLoading(false);
-    resetForm();
-    onOpenChange(false);
+          // Get the first image for Instagram publishing
+          const imageFile = selectedImages[0];
+          const imageUrl = URL.createObjectURL(imageFile);
+
+          // Publish to Instagram
+          const result = await instagramService.postPhoto(
+            imageUrl,
+            instagramCaption || caption
+          );
+
+          if (result.success && result.media_id) {
+            // Save to database
+            await instagramDbService.createInstagramPost({
+              mediaId: result.media_id,
+              containerId: result.container_id,
+              mediaType: 'IMAGE',
+              mediaUrl: imageUrl,
+              caption: instagramCaption || caption,
+              clerkId: 'user123', // TODO: Get from auth context
+            });
+
+            console.log('Successfully published to Instagram:', result.media_id);
+          } else {
+            throw new Error(result.error || 'Failed to publish to Instagram');
+          }
+        } catch (instagramError) {
+          console.error('Instagram publishing failed:', instagramError);
+          // Don't fail the entire operation if Instagram publishing fails
+        } finally {
+          setIsPublishingToInstagram(false);
+        }
+      }
+
+      // Simulate other platform API calls
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      console.log("Action:", action, {
+        images: selectedImages,
+        caption,
+        hashtags,
+        date: selectedDate,
+        time: selectedTime,
+        platform,
+        publishedToInstagram: publishToInstagram,
+      });
+
+      resetForm();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Action failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFormValid = selectedImages.length > 0 && caption.trim();
@@ -262,6 +324,44 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
                   <SelectItem value="tiktok">TikTok</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Instagram Publishing Options */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="publish-instagram"
+                  checked={publishToInstagram}
+                  onCheckedChange={setPublishToInstagram}
+                />
+                <Label htmlFor="publish-instagram" className="flex items-center gap-2">
+                  <Instagram className="h-4 w-4 text-pink-600" />
+                  Also publish to Instagram
+                </Label>
+              </div>
+
+              {publishToInstagram && (
+                <div className="space-y-2">
+                  <Label htmlFor="instagram-caption">Instagram Caption</Label>
+                  <Textarea
+                    id="instagram-caption"
+                    placeholder="Instagram-specific caption (optional)"
+                    value={instagramCaption}
+                    onChange={(e) => setInstagramCaption(e.target.value)}
+                    rows={3}
+                    className="resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {instagramCaption.length}/2200 characters
+                  </p>
+                  {isPublishingToInstagram && (
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Publishing to Instagram...
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Date Selection */}

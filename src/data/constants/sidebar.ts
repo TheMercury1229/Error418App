@@ -6,6 +6,7 @@ import {
   Palette,
   Users,
   Video,
+  Instagram,
 } from "lucide-react";
 
 export const navigation = [
@@ -23,6 +24,11 @@ export const navigation = [
     name: "AI Video",
     href: "/ai-video",
     icon: Video,
+  },
+  {
+    name: "Instagram Publisher",
+    href: "/instagram-publisher",
+    icon: Instagram,
   },
   {
     name: "Scheduler",

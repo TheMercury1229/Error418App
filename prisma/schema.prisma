@@ -14,6 +14,9 @@ model User {
   instaUsername String?
   instaPassword String? // ⚠️ recommend encrypting before saving
   conversations Conversation[]
+  instagramPosts InstagramPost[]
+  instagramAnalytics InstagramAnalytics[]
+  instagramAccount InstagramAccount?
 }
 
 model Conversation {
@@ -43,4 +46,105 @@ model Message {
 enum Role {
   user
   assistant
+}
+
+model InstagramPost {
+  id          String   @id @default(cuid())
+  mediaId     String
+  containerId String?
+  mediaType   String   // IMAGE, VIDEO, CAROUSEL_ALBUM
+  mediaUrl    String?
+  caption     String?
+  permalink   String?
+  timestamp   DateTime @default(now())
+  status      String   @default("published") // published, failed, scheduled
+  scheduledAt DateTime?
+
+  // Analytics data
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  saved       Int      @default(0)
+  reach       Int      @default(0)
+  views       Int      @default(0)
+
+  // Raw analytics data (JSON)
+  rawAnalytics Json?
+
+  // Comments data (JSON)
+  rawComments  Json?
+
+  // Media info (JSON)
+  mediaInfo    Json?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clerkId     String
+  user        User     @relation(fields: [clerkId], references: [clerkId], onDelete: Cascade)
+
+  @@unique([mediaId, clerkId])
+  @@map("instagram_posts")
+}
+
+model InstagramAnalytics {
+  id          String   @id @default(cuid())
+  mediaId     String
+  period      String   // lifetime, day, week, days_28
+  reach       Int      @default(0)
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  saved       Int      @default(0)
+  views       Int      @default(0)
+  timestamp   DateTime @default(now())
+
+  // Raw analytics data
+  rawData     Json?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clerkId     String
+  user        User     @relation(fields: [clerkId], references: [clerkId], onDelete: Cascade)
+
+  @@map("instagram_analytics")
+}
+
+model InstagramAccount {
+  id              String   @id @default(cuid())
+  accountId       String   @unique
+  username        String
+  name            String?
+  biography       String?
+  followersCount  Int      @default(0)
+  followsCount    Int      @default(0)
+  mediaCount      Int      @default(0)
+  profilePictureUrl String?
+  website         String?
+
+  // Account analytics
+  profileViews    Int      @default(0)
+  websiteClicks   Int      @default(0)
+  accountsEngaged Int      @default(0)
+  totalInteractions Int    @default(0)
+
+  // Influencer metrics
+  averageEngagementPerPost Float?
+  engagementRatePercentage Float?
+  totalEngagementLast12Posts Int @default(0)
+  totalPostsAnalyzed Int     @default(0)
+
+  // Raw account data
+  rawAccountData  Json?
+  rawRecentMedia  Json?
+
+  lastSync        DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clerkId         String   @unique
+  user            User     @relation(fields: [clerkId], references: [clerkId], onDelete: Cascade)
+
+  @@map("instagram_accounts")
 }

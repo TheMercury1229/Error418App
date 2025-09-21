@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,9 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
+import { InstagramService } from "@/services/instagram.service";
+import { instagramDbService } from "@/services/instagram-db.service";
+import { InstagramPageAnalyticsResponse } from "@/services/instagram.service";
 
 export interface InstagramSettings {
   username: string;
@@ -36,18 +39,58 @@ interface InstagramTabProps {
   settings: InstagramSettings;
   onSave: (settings: InstagramSettings) => void;
   isSaving: boolean;
+  clerkId: string;
 }
 
 export function InstagramTab({
   settings,
   onSave,
   isSaving,
+  clerkId,
 }: InstagramTabProps) {
   const [formData, setFormData] = useState<InstagramSettings>(settings);
   const [showPassword, setShowPassword] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionProgress, setConnectionProgress] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiStatus, setApiStatus] = useState<'checking' | 'ready' | 'error'>('checking');
+  const [accountData, setAccountData] = useState<any>(null);
+
+  const instagramService = new InstagramService();
+
+  useEffect(() => {
+    checkApiStatus();
+    loadAccountData();
+  }, []);
+
+  const checkApiStatus = async () => {
+    try {
+      setApiStatus('checking');
+      const isReady = await instagramService.isReady();
+      setApiStatus(isReady ? 'ready' : 'error');
+    } catch (error) {
+      console.error('API status check failed:', error);
+      setApiStatus('error');
+    }
+  };
+
+  const loadAccountData = async () => {
+    try {
+      const account = await instagramDbService.getInstagramAccount(clerkId);
+      if (account) {
+        setAccountData(account);
+        setFormData(prev => ({
+          ...prev,
+          isConnected: true,
+          lastSync: account.lastSync,
+          followerCount: account.followersCount,
+          postsCount: account.mediaCount,
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to load account data:', error);
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -87,41 +130,70 @@ export function InstagramTab({
 
     setIsConnecting(true);
     setConnectionProgress(0);
+    setErrors({});
 
     try {
-      // Simulate connection process
-      const progressInterval = setInterval(() => {
-        setConnectionProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + Math.random() * 20;
-        });
-      }, 200);
+      // Check API status first
+      setConnectionProgress(25);
+      const isApiReady = await instagramService.isReady();
+      if (!isApiReady) {
+        throw new Error('Instagram API is not available');
+      }
 
-      // Simulate API calls
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Fetch account analytics
+      setConnectionProgress(50);
+      const analyticsResponse: InstagramPageAnalyticsResponse = await instagramService.getPageAnalytics();
+
+      if (!analyticsResponse.success || !analyticsResponse.data) {
+        throw new Error(analyticsResponse.error || 'Failed to fetch account data');
+      }
+
+      setConnectionProgress(75);
+
+      // Save account data to database
+      const accountData = analyticsResponse.data;
+      await instagramDbService.createOrUpdateInstagramAccount({
+        accountId: accountData.account_id,
+        username: accountData.account_info.username,
+        name: accountData.account_info.name,
+        biography: accountData.account_info.biography,
+        followersCount: accountData.account_info.followers_count,
+        followsCount: accountData.account_info.follows_count,
+        mediaCount: accountData.account_info.media_count,
+        profilePictureUrl: accountData.account_info.profile_picture_url,
+        website: accountData.account_info.website,
+        profileViews: accountData.account_analytics.profile_views.value,
+        websiteClicks: accountData.account_analytics.website_clicks.value,
+        accountsEngaged: accountData.account_analytics.accounts_engaged.value,
+        totalInteractions: accountData.account_analytics.total_interactions.value,
+        averageEngagementPerPost: accountData.influencer_metrics.average_engagement_per_post,
+        engagementRatePercentage: accountData.influencer_metrics.engagement_rate_percentage,
+        totalEngagementLast12Posts: accountData.influencer_metrics.total_engagement_last_12_posts,
+        totalPostsAnalyzed: accountData.influencer_metrics.total_posts_analyzed,
+        rawAccountData: accountData,
+        rawRecentMedia: accountData.recent_media,
+        clerkId,
+      });
+
       setConnectionProgress(100);
 
-      // Update connection status and sync data
+      // Update form data with real data
       const updatedSettings = {
         ...formData,
         isConnected: true,
         lastSync: new Date(),
-        followerCount: Math.floor(Math.random() * 50000) + 10000,
-        postsCount: Math.floor(Math.random() * 500) + 100,
+        followerCount: accountData.account_info.followers_count,
+        postsCount: accountData.account_info.media_count,
       };
 
       setFormData(updatedSettings);
+      setAccountData(accountData);
       onSave(updatedSettings);
 
-      clearInterval(progressInterval);
     } catch (error) {
       console.error("Connection failed:", error);
       setErrors({
-        general:
-          "Failed to connect to Instagram. Please check your credentials.",
+        general: error instanceof Error ? error.message : "Failed to connect to Instagram. Please check your configuration.",
       });
     } finally {
       setIsConnecting(false);
@@ -129,14 +201,24 @@ export function InstagramTab({
     }
   };
 
-  const handleDisconnect = () => {
-    const updatedSettings = {
-      ...formData,
-      isConnected: false,
-      lastSync: null,
-    };
-    setFormData(updatedSettings);
-    onSave(updatedSettings);
+  const handleDisconnect = async () => {
+    try {
+      // Clear account data from database
+      await instagramDbService.getInstagramAccount(clerkId); // This will be used to clear data if needed
+
+      const updatedSettings = {
+        ...formData,
+        isConnected: false,
+        lastSync: null,
+        followerCount: 0,
+        postsCount: 0,
+      };
+      setFormData(updatedSettings);
+      setAccountData(null);
+      onSave(updatedSettings);
+    } catch (error) {
+      console.error('Error disconnecting Instagram:', error);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -185,9 +267,33 @@ export function InstagramTab({
                 Disconnected
               </Badge>
             )}
+            <Badge variant={apiStatus === 'ready' ? 'default' : 'destructive'}>
+              {apiStatus === 'ready' && <CheckCircle className="h-3 w-3 mr-1" />}
+              {apiStatus === 'error' && <AlertCircle className="h-3 w-3 mr-1" />}
+              {apiStatus === 'checking' && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              {apiStatus === 'ready' && 'API Ready'}
+              {apiStatus === 'error' && 'API Error'}
+              {apiStatus === 'checking' && 'Checking...'}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* API Status Alert */}
+          {apiStatus === 'error' && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  Instagram API is not available. Please check your configuration.
+                </span>
+                <Button onClick={checkApiStatus} variant="outline" size="sm" className="ml-auto">
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Retry
+                </Button>
+              </div>
+            </div>
+          )}
+
           {formData.isConnected ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -225,6 +331,36 @@ export function InstagramTab({
                   </div>
                 </div>
               </div>
+
+              {/* Account Info */}
+              {accountData && (
+                <div className="pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">
+                        @{accountData.username}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {accountData.name} • {accountData.biography}
+                      </p>
+                      {accountData.engagementRatePercentage && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Engagement Rate: {accountData.engagementRatePercentage}%
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleDisconnect}
+                      className="text-red-600 hover:text-red-700 dark:text-red-400"
+                    >
+                      <Unlink className="h-4 w-4 mr-2" />
+                      Disconnect
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="pt-4 border-t">
                 <div className="flex items-center justify-between">

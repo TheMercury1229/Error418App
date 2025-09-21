@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Youtube, BugPlay } from "lucide-react";
+import { Plus, Calendar, Youtube, BugPlay, Instagram } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +55,15 @@ export function DashboardActions() {
           >
             <Youtube className="h-4 w-4 mr-2" />
             Upload YouTube Video
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              // Navigate to Instagram publisher
+              window.location.href = '/instagram-publisher';
+            }}
+          >
+            <Instagram className="h-4 w-4 mr-2" />
+            Add Instagram Post
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleDebugAuth}>

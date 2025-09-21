@@ -4,6 +4,7 @@ import { PostPerformanceTable } from "@/features/dashboard/components/post-perfo
 import { DashboardActions } from "@/features/dashboard/components/dashboard-actions";
 import { AIInsights } from "@/features/dashboard/components/ai-insights";
 import { YouTubeAnalytics } from "@/features/dashboard/components/youtube-analytics";
+import { InstagramAnalytics } from "@/features/dashboard/components/instagram-analytics";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -21,9 +22,10 @@ export default function Dashboard() {
 
       {/* Platform Tabs */}
       <Tabs defaultValue="social" className="w-full">
-        <TabsList className="w-full max-w-md mx-auto grid grid-cols-2">
+        <TabsList className="w-full max-w-2xl mx-auto grid grid-cols-3">
           <TabsTrigger value="social">Social Media</TabsTrigger>
           <TabsTrigger value="youtube">YouTube</TabsTrigger>
+          <TabsTrigger value="instagram">Instagram</TabsTrigger>
         </TabsList>
 
         <TabsContent value="social" className="space-y-8 mt-6">
@@ -40,6 +42,11 @@ export default function Dashboard() {
         <TabsContent value="youtube" className="mt-6">
           {/* YouTube Analytics */}
           <YouTubeAnalytics />
+        </TabsContent>
+
+        <TabsContent value="instagram" className="mt-6">
+          {/* Instagram Analytics */}
+          <InstagramAnalytics />
         </TabsContent>
       </Tabs>
     </div>

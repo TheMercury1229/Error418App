@@ -33,6 +33,7 @@ export interface InstagramSettings {
   lastSync: Date | null;
   followerCount: number;
   postsCount: number;
+  clerkId?: string;
 }
 
 export interface UserPreferences {
@@ -224,6 +225,7 @@ export function SettingsHub() {
                   settings={instagramSettings}
                   onSave={(data) => handleSave("instagram", data)}
                   isSaving={isSaving}
+                  clerkId="user123" // TODO: Get from auth context
                 />
               </TabsContent>
 
