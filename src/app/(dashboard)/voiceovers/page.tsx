@@ -1,6 +1,6 @@
 import React from "react";
-import { VoiceoverStudio } from "@/features/voiceover/voiceover-studio";
+import { VideoTranslator } from "@/features/video-translation/video-translator";
 
 export default function Voiceover() {
-  return <VoiceoverStudio />;
+  return <VideoTranslator />;
 }
