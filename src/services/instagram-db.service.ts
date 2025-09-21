@@ -1,36 +1,40 @@
-import { InstagramAnalyticsResponse, InstagramPageAnalyticsResponse } from './instagram.service';
+import prisma from "@/lib/db";
+import {
+  InstagramAnalyticsResponse,
+  InstagramPageAnalyticsResponse,
+} from "./instagram.service";
 
 // Try to import Prisma client, but handle the case where it's not available
-let PrismaClient: any;
-let prisma: any;
+// let PrismaClient: any;
+// let prisma: any;
 
-try {
-  const prismaModule = require('@prisma/client');
-  PrismaClient = prismaModule.PrismaClient;
-  prisma = new PrismaClient();
-  console.log('Prisma client initialized successfully');
-} catch (error) {
-  console.warn('Prisma client not available, using mock implementation:', error);
-  // Mock implementation for when Prisma is not available
-  prisma = {
-    instagramPost: {
-      create: async () => { throw new Error('Database not available'); },
-      findUnique: async () => null,
-      findMany: async () => [],
-      updateMany: async () => { throw new Error('Database not available'); },
-      deleteMany: async () => { throw new Error('Database not available'); },
-    },
-    instagramAnalytics: {
-      create: async () => { throw new Error('Database not available'); },
-      findMany: async () => [],
-    },
-    instagramAccount: {
-      upsert: async () => { throw new Error('Database not available'); },
-      findUnique: async () => null,
-    },
-    $disconnect: async () => {},
-  };
-}
+// try {
+//   const prismaModule = require('@prisma/client');
+//   PrismaClient = prismaModule.PrismaClient;
+//   prisma = new PrismaClient();
+//   console.log('Prisma client initialized successfully');
+// } catch (error) {
+//   console.warn('Prisma client not available, using mock implementation:', error);
+//   // Mock implementation for when Prisma is not available
+//   prisma = {
+//     instagramPost: {
+//       create: async () => { throw new Error('Database not available'); },
+//       findUnique: async () => null,
+//       findMany: async () => [],
+//       updateMany: async () => { throw new Error('Database not available'); },
+//       deleteMany: async () => { throw new Error('Database not available'); },
+//     },
+//     instagramAnalytics: {
+//       create: async () => { throw new Error('Database not available'); },
+//       findMany: async () => [],
+//     },
+//     instagramAccount: {
+//       upsert: async () => { throw new Error('Database not available'); },
+//       findUnique: async () => null,
+//     },
+//     $disconnect: async () => {},
+//   };
+// }
 
 export interface CreateInstagramPostData {
   mediaId: string;
@@ -107,15 +111,15 @@ export class InstagramDbService {
             caption: data.caption,
             permalink: data.permalink,
             timestamp: data.timestamp || new Date(),
-            status: data.status || 'published',
+            status: data.status || "published",
             scheduledAt: data.scheduledAt,
             clerkId: data.clerkId,
           },
         });
       } else {
-        console.log('Database not available, returning mock post data');
+        console.log("Database not available, returning mock post data");
         return {
-          id: 'mock-' + data.mediaId,
+          id: "mock-" + data.mediaId,
           mediaId: data.mediaId,
           containerId: data.containerId,
           mediaType: data.mediaType,
@@ -123,16 +127,16 @@ export class InstagramDbService {
           caption: data.caption,
           permalink: data.permalink,
           timestamp: data.timestamp || new Date(),
-          status: data.status || 'published',
+          status: data.status || "published",
           scheduledAt: data.scheduledAt,
           clerkId: data.clerkId,
         };
       }
     } catch (error) {
-      console.error('Error creating Instagram post:', error);
+      console.error("Error creating Instagram post:", error);
       // Return mock data instead of throwing error
       return {
-        id: 'mock-' + data.mediaId,
+        id: "mock-" + data.mediaId,
         mediaId: data.mediaId,
         containerId: data.containerId,
         mediaType: data.mediaType,
@@ -140,7 +144,7 @@ export class InstagramDbService {
         caption: data.caption,
         permalink: data.permalink,
         timestamp: data.timestamp || new Date(),
-        status: data.status || 'published',
+        status: data.status || "published",
         scheduledAt: data.scheduledAt,
         clerkId: data.clerkId,
       };
@@ -159,11 +163,11 @@ export class InstagramDbService {
           },
         });
       } else {
-        console.log('Database not available, returning null');
+        console.log("Database not available, returning null");
         return null;
       }
     } catch (error) {
-      console.error('Error getting Instagram post by media ID:', error);
+      console.error("Error getting Instagram post by media ID:", error);
       return null;
     }
   }
@@ -173,20 +177,24 @@ export class InstagramDbService {
       if (prisma.instagramPost && prisma.instagramPost.findMany) {
         return await prisma.instagramPost.findMany({
           where: { clerkId },
-          orderBy: { timestamp: 'desc' },
+          orderBy: { timestamp: "desc" },
           take: limit,
         });
       } else {
-        console.log('Database not available, returning empty array');
+        console.log("Database not available, returning empty array");
         return [];
       }
     } catch (error) {
-      console.error('Error getting Instagram posts by user:', error);
+      console.error("Error getting Instagram posts by user:", error);
       return [];
     }
   }
 
-  async updateInstagramPost(mediaId: string, clerkId: string, data: UpdateInstagramPostData) {
+  async updateInstagramPost(
+    mediaId: string,
+    clerkId: string,
+    data: UpdateInstagramPostData
+  ) {
     try {
       if (prisma.instagramPost && prisma.instagramPost.updateMany) {
         return await prisma.instagramPost.updateMany({
@@ -200,11 +208,11 @@ export class InstagramDbService {
           },
         });
       } else {
-        console.log('Database not available, returning mock update result');
+        console.log("Database not available, returning mock update result");
         return { count: 0 };
       }
     } catch (error) {
-      console.error('Error updating Instagram post:', error);
+      console.error("Error updating Instagram post:", error);
       return { count: 0 };
     }
   }
@@ -219,11 +227,11 @@ export class InstagramDbService {
           },
         });
       } else {
-        console.log('Database not available, returning mock delete result');
+        console.log("Database not available, returning mock delete result");
         return { count: 0 };
       }
     } catch (error) {
-      console.error('Error deleting Instagram post:', error);
+      console.error("Error deleting Instagram post:", error);
       return { count: 0 };
     }
   }
@@ -247,9 +255,9 @@ export class InstagramDbService {
           },
         });
       } else {
-        console.log('Database not available, returning mock analytics data');
+        console.log("Database not available, returning mock analytics data");
         return {
-          id: 'mock-analytics-' + data.mediaId,
+          id: "mock-analytics-" + data.mediaId,
           mediaId: data.mediaId,
           period: data.period,
           reach: data.reach || 0,
@@ -263,9 +271,9 @@ export class InstagramDbService {
         };
       }
     } catch (error) {
-      console.error('Error creating Instagram analytics:', error);
+      console.error("Error creating Instagram analytics:", error);
       return {
-        id: 'mock-analytics-' + data.mediaId,
+        id: "mock-analytics-" + data.mediaId,
         mediaId: data.mediaId,
         period: data.period,
         reach: data.reach || 0,
@@ -288,14 +296,14 @@ export class InstagramDbService {
             mediaId,
             clerkId,
           },
-          orderBy: { timestamp: 'desc' },
+          orderBy: { timestamp: "desc" },
         });
       } else {
-        console.log('Database not available, returning empty array');
+        console.log("Database not available, returning empty array");
         return [];
       }
     } catch (error) {
-      console.error('Error getting Instagram analytics by media ID:', error);
+      console.error("Error getting Instagram analytics by media ID:", error);
       return [];
     }
   }
@@ -305,14 +313,14 @@ export class InstagramDbService {
       if (prisma.instagramAnalytics && prisma.instagramAnalytics.findMany) {
         return await prisma.instagramAnalytics.findMany({
           where: { clerkId },
-          orderBy: { timestamp: 'desc' },
+          orderBy: { timestamp: "desc" },
         });
       } else {
-        console.log('Database not available, returning empty array');
+        console.log("Database not available, returning empty array");
         return [];
       }
     } catch (error) {
-      console.error('Error getting all Instagram analytics:', error);
+      console.error("Error getting all Instagram analytics:", error);
       return [];
     }
   }
@@ -372,9 +380,9 @@ export class InstagramDbService {
           },
         });
       } else {
-        console.log('Database not available, returning mock account data');
+        console.log("Database not available, returning mock account data");
         return {
-          id: 'mock-account-' + data.clerkId,
+          id: "mock-account-" + data.clerkId,
           accountId: data.accountId,
           username: data.username,
           name: data.name,
@@ -398,9 +406,9 @@ export class InstagramDbService {
         };
       }
     } catch (error) {
-      console.error('Error creating/updating Instagram account:', error);
+      console.error("Error creating/updating Instagram account:", error);
       return {
-        id: 'mock-account-' + data.clerkId,
+        id: "mock-account-" + data.clerkId,
         accountId: data.accountId,
         username: data.username,
         name: data.name,
@@ -432,11 +440,11 @@ export class InstagramDbService {
           where: { clerkId },
         });
       } else {
-        console.log('Database not available, returning null');
+        console.log("Database not available, returning null");
         return null;
       }
     } catch (error) {
-      console.error('Error getting Instagram account:', error);
+      console.error("Error getting Instagram account:", error);
       return null;
     }
   }
@@ -467,7 +475,7 @@ export class InstagramDbService {
     const analytics = data.analytics;
     const analyticsData: CreateInstagramAnalyticsData = {
       mediaId: data.media_id,
-      period: 'lifetime',
+      period: "lifetime",
       reach: analytics.reach,
       likes: analytics.likes,
       comments: analytics.comments,
@@ -518,9 +526,12 @@ export class InstagramDbService {
       websiteClicks: data.account_analytics.website_clicks.value,
       accountsEngaged: data.account_analytics.accounts_engaged.value,
       totalInteractions: data.account_analytics.total_interactions.value,
-      averageEngagementPerPost: data.influencer_metrics.average_engagement_per_post,
-      engagementRatePercentage: data.influencer_metrics.engagement_rate_percentage,
-      totalEngagementLast12Posts: data.influencer_metrics.total_engagement_last_12_posts,
+      averageEngagementPerPost:
+        data.influencer_metrics.average_engagement_per_post,
+      engagementRatePercentage:
+        data.influencer_metrics.engagement_rate_percentage,
+      totalEngagementLast12Posts:
+        data.influencer_metrics.total_engagement_last_12_posts,
       totalPostsAnalyzed: data.influencer_metrics.total_posts_analyzed,
       rawAccountData: data,
       rawRecentMedia: data.recent_media,

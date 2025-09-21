@@ -17,6 +17,7 @@ import { TextEditor } from "@/features/reel-creation/components/text-editor";
 import { VideoCanvas } from "@/features/reel-creation/components/video-canvas";
 import { EditingToolbar } from "@/features/reel-creation/components/editing-toolbar";
 import { ReelPreview } from "@/features/reel-creation/components/reel-preview";
+import { TutorialButton } from "@/features/tutorial/tutorial-button";
 
 export function ReelCreation() {
   const [activeMode, setActiveMode] = useState<"poem" | "reel">("poem");
@@ -53,6 +54,11 @@ export function ReelCreation() {
           <p className="text-muted-foreground">
             Create engaging reels from poems and scripts
           </p>
+          <TutorialButton
+            page="studio"
+            label="Studio Tutorial"
+            className="mt-1 h-auto p-0"
+          />
         </div>
 
         <div className="flex items-center gap-2">

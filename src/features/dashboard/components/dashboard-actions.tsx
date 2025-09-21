@@ -28,7 +28,7 @@ export function DashboardActions() {
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4">
+    <div className="flex flex-col sm:flex-row gap-4 dashboard-actions">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button className="flex-1 sm:flex-none">
@@ -59,7 +59,7 @@ export function DashboardActions() {
           <DropdownMenuItem
             onClick={() => {
               // Navigate to Instagram publisher
-              window.location.href = '/instagram-publisher';
+              window.location.href = "/instagram-publisher";
             }}
           >
             <Instagram className="h-4 w-4 mr-2" />

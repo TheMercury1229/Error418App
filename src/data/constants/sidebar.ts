@@ -4,7 +4,6 @@ import {
   Mic,
   Settings,
   Palette,
-  Users,
   Video,
   Instagram,
 } from "lucide-react";
@@ -34,11 +33,6 @@ export const navigation = [
     name: "Scheduler",
     href: "/scheduler",
     icon: Calendar,
-  },
-  {
-    name: "Collaborations",
-    href: "/collaborations",
-    icon: Users,
   },
   {
     name: "Voiceovers",

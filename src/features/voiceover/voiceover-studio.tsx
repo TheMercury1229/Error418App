@@ -24,6 +24,7 @@ import { FileUploadZone } from "@/features/voiceover/components/file-upload-zone
 import { VoiceSettingsPanel } from "@/features/voiceover/components/voice-settings-panel";
 import { MediaPlayer } from "@/features/voiceover/components/media-player";
 import { OutputControls } from "@/features/voiceover/components/output-controls";
+import { TutorialButton } from "@/features/tutorial/tutorial-button";
 
 interface UploadedFile {
   file: File;
@@ -152,6 +153,11 @@ export function VoiceoverStudio() {
           <p className="text-muted-foreground">
             Generate professional voiceovers and dubbing in multiple languages
           </p>
+          <TutorialButton
+            page="voiceovers"
+            label="Voiceover Tutorial"
+            className="mt-1 h-auto p-0"
+          />
         </div>
 
         <div className="flex items-center gap-2">

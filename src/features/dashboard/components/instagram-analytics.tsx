@@ -122,7 +122,9 @@ export function InstagramAnalytics() {
       } else {
         setData({
           success: false,
-          error: response.error || "Failed to load Instagram analytics. Please try again later.",
+          error:
+            response.error ||
+            "Failed to load Instagram analytics. Please try again later.",
         });
       }
     } catch (error) {
@@ -189,12 +191,8 @@ export function InstagramAnalytics() {
       <AlertCircle className="h-4 w-4" />
       <AlertTitle>Service Unavailable</AlertTitle>
       <AlertDescription className="space-y-2">
-        <p>
-          {data?.error || "Unable to connect to Instagram API service."}
-        </p>
-        <p className="text-sm">
-          This could be due to:
-        </p>
+        <p>{data?.error || "Unable to connect to Instagram API service."}</p>
+        <p className="text-sm">This could be due to:</p>
         <ul className="text-sm list-disc list-inside ml-4 space-y-1">
           <li>Instagram API service being temporarily down</li>
           <li>Network connectivity issues</li>
@@ -205,17 +203,11 @@ export function InstagramAnalytics() {
         </p>
       </AlertDescription>
       <div className="flex gap-2 mt-4">
-        <Button
-          variant="outline"
-          onClick={fetchAnalytics}
-        >
+        <Button variant="outline" onClick={fetchAnalytics}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Try Again
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => window.location.reload()}
-        >
+        <Button variant="outline" onClick={() => window.location.reload()}>
           Reload Page
         </Button>
       </div>
@@ -247,11 +239,10 @@ export function InstagramAnalytics() {
                 )}
               </div>
               <div>
-                <CardTitle className="text-xl">
-                  {accountData.name}
-                </CardTitle>
+                <CardTitle className="text-xl">{accountData.name}</CardTitle>
                 <CardDescription className="line-clamp-1">
-                  @{accountData.username} • {accountData.biography || "Instagram Creator"}
+                  @{accountData.username} •{" "}
+                  {accountData.biography || "Instagram Creator"}
                 </CardDescription>
               </div>
             </div>
@@ -266,16 +257,12 @@ export function InstagramAnalytics() {
               </div>
               <div className="flex items-center">
                 <Instagram className="mr-1 h-4 w-4 text-muted-foreground" />
-                <span>
-                  {formatNumber(accountData.media_count)} posts
-                </span>
+                <span>{formatNumber(accountData.media_count)} posts</span>
               </div>
               {accountData.website && (
                 <div className="flex items-center">
                   <span className="text-muted-foreground">🌐</span>
-                  <span className="ml-1">
-                    {accountData.website}
-                  </span>
+                  <span className="ml-1">{accountData.website}</span>
                 </div>
               )}
             </div>
@@ -302,7 +289,9 @@ export function InstagramAnalytics() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Followers</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Followers
+                  </CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -338,7 +327,9 @@ export function InstagramAnalytics() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Profile Views</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Profile Views
+                  </CardTitle>
                   <Instagram className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -356,12 +347,14 @@ export function InstagramAnalytics() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Engagement Rate
+                  </CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {metrics?.engagement_rate_percentage.toFixed(2) || '0.00'}%
+                    {metrics?.engagement_rate_percentage.toFixed(2) || "0.00"}%
                   </div>
                   <p className="text-xs text-muted-foreground">
                     <span className="text-green-600">
@@ -378,56 +371,75 @@ export function InstagramAnalytics() {
           {data.data?.recent_media?.data && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Recent Posts Performance</CardTitle>
+                <CardTitle className="text-lg">
+                  Recent Posts Performance
+                </CardTitle>
                 <CardDescription>
                   Performance metrics for your latest Instagram posts
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {data.data.recent_media.data.slice(0, 5).map((post, index) => {
-                    const engagementRate = post.like_count > 0
-                      ? ((post.like_count + post.comments_count) / post.like_count) * 100
-                      : 0;
+                  {data.data.recent_media.data
+                    .slice(0, 5)
+                    .map((post, index) => {
+                      const engagementRate =
+                        post.like_count > 0
+                          ? ((post.like_count + post.comments_count) /
+                              post.like_count) *
+                            100
+                          : 0;
 
-                    return (
-                      <div key={post.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                            {index + 1}
+                      return (
+                        <div
+                          key={post.id}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium truncate max-w-md">
+                                {post.caption || "No caption"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {format(
+                                  new Date(post.timestamp),
+                                  "MMM d, yyyy"
+                                )}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <p className="font-medium truncate max-w-md">
-                              {post.caption || 'No caption'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {format(new Date(post.timestamp), "MMM d, yyyy")}
-                            </p>
+                          <div className="flex items-center gap-4 text-sm">
+                            <div className="text-center">
+                              <div className="font-medium flex items-center gap-1">
+                                <Heart className="h-3 w-3 text-red-500" />
+                                {formatNumber(post.like_count)}
+                              </div>
+                              <div className="text-muted-foreground">Likes</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-medium flex items-center gap-1">
+                                <MessageCircle className="h-3 w-3 text-blue-500" />
+                                {formatNumber(post.comments_count)}
+                              </div>
+                              <div className="text-muted-foreground">
+                                Comments
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-medium">
+                                {engagementRate.toFixed(1)}%
+                              </div>
+                              <div className="text-muted-foreground">
+                                Engagement
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="text-center">
-                            <div className="font-medium flex items-center gap-1">
-                              <Heart className="h-3 w-3 text-red-500" />
-                              {formatNumber(post.like_count)}
-                            </div>
-                            <div className="text-muted-foreground">Likes</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-medium flex items-center gap-1">
-                              <MessageCircle className="h-3 w-3 text-blue-500" />
-                              {formatNumber(post.comments_count)}
-                            </div>
-                            <div className="text-muted-foreground">Comments</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-medium">{engagementRate.toFixed(1)}%</div>
-                            <div className="text-muted-foreground">Engagement</div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </CardContent>
               <CardFooter>
@@ -477,7 +489,8 @@ export function InstagramAnalytics() {
                   <div className="flex items-center justify-between text-sm">
                     <span>Average Engagement Rate</span>
                     <span className="font-medium">
-                      {metrics?.engagement_rate_percentage.toFixed(2) || '0.00'}%
+                      {metrics?.engagement_rate_percentage.toFixed(2) || "0.00"}
+                      %
                     </span>
                   </div>
                   <Progress value={metrics?.engagement_rate_percentage || 0} />
@@ -490,17 +503,29 @@ export function InstagramAnalytics() {
                       {formatNumber(metrics?.average_engagement_per_post || 0)}
                     </span>
                   </div>
-                  <Progress value={Math.min((metrics?.average_engagement_per_post || 0) / 100, 100)} />
+                  <Progress
+                    value={Math.min(
+                      (metrics?.average_engagement_per_post || 0) / 100,
+                      100
+                    )}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span>Total Interactions (Last 12 Posts)</span>
                     <span className="font-medium">
-                      {formatNumber(metrics?.total_engagement_last_12_posts || 0)}
+                      {formatNumber(
+                        metrics?.total_engagement_last_12_posts || 0
+                      )}
                     </span>
                   </div>
-                  <Progress value={Math.min((metrics?.total_engagement_last_12_posts || 0) / 1000, 100)} />
+                  <Progress
+                    value={Math.min(
+                      (metrics?.total_engagement_last_12_posts || 0) / 1000,
+                      100
+                    )}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -513,17 +538,17 @@ export function InstagramAnalytics() {
             <CardHeader>
               <CardTitle>Instagram Insights</CardTitle>
               <CardDescription>
-                AI-powered insights and recommendations for your Instagram strategy
+                AI-powered insights and recommendations for your Instagram
+                strategy
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-10">
                 <TrendingUp className="mx-auto h-10 w-10 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">
-                  Insights coming soon
-                </h3>
+                <h3 className="text-lg font-medium">Insights coming soon</h3>
                 <p className="text-sm text-muted-foreground mt-2">
-                  This section will provide AI-powered insights and recommendations
+                  This section will provide AI-powered insights and
+                  recommendations
                 </p>
               </div>
             </CardContent>

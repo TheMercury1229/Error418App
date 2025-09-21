@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { SchedulerCalendar } from "@/features/scheduler/components/scheduler-calendar";
 import { ScheduledPostsList } from "@/features/scheduler/components/scheduled-posts-list";
 import { NewPostModal } from "@/features/scheduler/components/new-post-modal";
+import { TutorialButton } from "@/features/tutorial/tutorial-button";
 
 export function PostScheduler() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +20,11 @@ export function PostScheduler() {
           <p className="text-muted-foreground">
             Plan and schedule your content calendar
           </p>
+          <TutorialButton
+            page="scheduler"
+            label="Scheduler Tutorial"
+            className="mt-1 h-auto p-0"
+          />
         </div>
         <Button
           onClick={() => setIsModalOpen(true)}

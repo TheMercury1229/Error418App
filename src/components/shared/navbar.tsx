@@ -5,6 +5,7 @@ import { UserButton } from "@clerk/nextjs";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { ModeToggle } from "@/components/ui/mode-toggle";
+import { TutorialToggle } from "@/features/tutorial/tutorial-toggle";
 
 export function DashboardNavbar() {
   return (
@@ -13,6 +14,7 @@ export function DashboardNavbar() {
       <Separator orientation="vertical" className="mr-2 h-4" />
       <div className="flex flex-1 items-center justify-end">
         <div className="flex items-center gap-3">
+          <TutorialToggle />
           <ModeToggle />
           <UserButton
             appearance={{

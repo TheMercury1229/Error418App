@@ -4,36 +4,17 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import {
-  Settings,
-  User,
-  Instagram,
-  Sliders,
-  Shield,
-  Bell,
-  Globe,
-  Camera,
-} from "lucide-react";
+import { Settings, User, Sliders, Shield, Bell, Globe } from "lucide-react";
 
 import { ProfileTab } from "@/features/settings/components/profile-tab";
-import { InstagramTab } from "@/features/settings/components/instagram-tab";
 import { PreferencesTab } from "@/features/settings/components/preferences-tab";
+import { TutorialButton } from "@/features/tutorial/tutorial-button";
 
 export interface UserProfile {
   name: string;
   email: string;
   profilePicture: string | null;
   bio: string;
-}
-
-export interface InstagramSettings {
-  username: string;
-  password: string;
-  isConnected: boolean;
-  lastSync: Date | null;
-  followerCount: number;
-  postsCount: number;
-  clerkId?: string;
 }
 
 export interface UserPreferences {
@@ -66,17 +47,6 @@ export function SettingsHub() {
     bio: "Content creator and social media manager",
   });
 
-  const [instagramSettings, setInstagramSettings] = useState<InstagramSettings>(
-    {
-      username: "@johndoe",
-      password: "",
-      isConnected: true,
-      lastSync: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      followerCount: 15420,
-      postsCount: 342,
-    }
-  );
-
   const [preferences, setPreferences] = useState<UserPreferences>({
     defaultLanguage: "en-US",
     timezone: "America/New_York",
@@ -96,7 +66,7 @@ export function SettingsHub() {
 
   const handleSave = async (
     tabName: string,
-    data: UserProfile | InstagramSettings | UserPreferences
+    data: UserProfile | UserPreferences
   ) => {
     setIsSaving(true);
     try {
@@ -107,9 +77,6 @@ export function SettingsHub() {
       switch (tabName) {
         case "profile":
           setUserProfile(data as UserProfile);
-          break;
-        case "instagram":
-          setInstagramSettings(data as InstagramSettings);
           break;
         case "preferences":
           setPreferences(data as UserPreferences);
@@ -143,6 +110,11 @@ export function SettingsHub() {
           <p className="text-muted-foreground">
             Manage your account, integrations, and application preferences
           </p>
+          <TutorialButton
+            page="settings"
+            label="Settings Tutorial"
+            className="mt-1 h-auto p-0"
+          />
         </div>
 
         <div className="flex items-center gap-2">
@@ -183,22 +155,10 @@ export function SettingsHub() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
                 Profile
-              </TabsTrigger>
-              <TabsTrigger
-                value="instagram"
-                className="flex items-center gap-2"
-              >
-                <Instagram className="h-4 w-4" />
-                Instagram
-                {instagramSettings.isConnected && (
-                  <Badge variant="secondary" className="ml-1 text-xs h-4">
-                    Connected
-                  </Badge>
-                )}
               </TabsTrigger>
               <TabsTrigger
                 value="preferences"
@@ -219,16 +179,6 @@ export function SettingsHub() {
                 />
               </TabsContent>
 
-              {/* Instagram Integration Tab */}
-              <TabsContent value="instagram" className="space-y-6">
-                <InstagramTab
-                  settings={instagramSettings}
-                  onSave={(data) => handleSave("instagram", data)}
-                  isSaving={isSaving}
-                  clerkId="user123" // TODO: Get from auth context
-                />
-              </TabsContent>
-
               {/* Preferences Tab */}
               <TabsContent value="preferences" className="space-y-6">
                 <PreferencesTab
@@ -243,7 +193,7 @@ export function SettingsHub() {
       </Card>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -254,22 +204,6 @@ export function SettingsHub() {
                 <p className="text-sm text-muted-foreground">Profile</p>
                 <p className="text-lg font-bold">
                   {userProfile.profilePicture ? "Complete" : "Incomplete"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg dark:bg-purple-900">
-                <Instagram className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Instagram</p>
-                <p className="text-lg font-bold">
-                  {instagramSettings.isConnected ? "Connected" : "Disconnected"}
                 </p>
               </div>
             </div>

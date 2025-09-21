@@ -11,6 +11,7 @@ import {
   videoGenerationService,
   VideoGenerationApiResponse,
 } from "@/services/video-generation.service";
+import { TutorialButton } from "@/features/tutorial/tutorial-button";
 
 export interface VideoGenerationRequest {
   prompt: string;
@@ -208,6 +209,11 @@ export function VideoGenerationHub() {
           <p className="text-muted-foreground">
             Transform your images and prompts into stunning AI-generated videos
           </p>
+          <TutorialButton
+            page="ai-video"
+            label="AI Video Tutorial"
+            className="mt-1 h-auto p-0"
+          />
         </div>
       </div>
 
