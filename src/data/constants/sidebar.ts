@@ -46,9 +46,4 @@ export const navigation = [
     href: "/voiceovers",
     icon: Mic,
   },
-  {
-    name: "Settings",
-    href: "/settings",
-    icon: Settings,
-  },
 ];

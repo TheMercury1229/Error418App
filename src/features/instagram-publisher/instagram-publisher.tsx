@@ -75,11 +75,18 @@ export function InstagramPublisher({
   const checkApiStatus = async () => {
     try {
       setApiStatus("checking");
-      const isReady = await instagramService.isReady();
-      setApiStatus(isReady ? "ready" : "error");
+      // Simulate API check but always return error due to expired tokens
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Brief delay for realistic UX
+      setApiStatus("error");
+      setError(
+        "Instagram API is currently unavailable due to expired access tokens. Please try again later."
+      );
     } catch (error) {
       console.error("API status check failed:", error);
       setApiStatus("error");
+      setError(
+        "Instagram API is currently unavailable due to expired access tokens. Please try again later."
+      );
     }
   };
 
@@ -95,7 +102,9 @@ export function InstagramPublisher({
     }
 
     if (apiStatus !== "ready") {
-      setError("Instagram API is not available");
+      setError(
+        "Instagram API is currently unavailable due to expired access tokens. Publishing is temporarily disabled."
+      );
       return;
     }
 
@@ -105,57 +114,21 @@ export function InstagramPublisher({
     setPublishProgress(0);
 
     try {
-      // Start publishing process
+      // Immediately fail with API down message
       setPublishProgress(25);
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Brief delay for UX
 
-      let result;
-      if (mediaType === "video") {
-        result = await instagramService.postVideo(previewUrl, caption, true);
-      } else {
-        result = await instagramService.postPhoto(previewUrl, caption);
-      }
+      setPublishProgress(50);
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      setPublishProgress(75);
-
-      if (result.success) {
-        setPublishProgress(100);
-
-        try {
-          // Save post to database
-          if (result.media_id) {
-            await instagramDbService.createInstagramPost({
-              mediaId: result.media_id,
-              containerId: result.container_id,
-              mediaType: mediaType === "video" ? "VIDEO" : "IMAGE",
-              mediaUrl: previewUrl,
-              caption: caption,
-              clerkId: clerkId,
-            });
-
-            console.log("Instagram post saved to database:", result.media_id);
-          }
-        } catch (dbError) {
-          console.error("Failed to save post to database:", dbError);
-          // Don't fail the entire operation if database save fails
-          // This is expected if Prisma client is not properly generated
-        }
-
-        setSuccess(
-          `Successfully published to Instagram! Media ID: ${result.media_id}`
-        );
-
-        if (onPublishSuccess) {
-          onPublishSuccess(result);
-        }
-      } else {
-        throw new Error(result.error || "Publishing failed");
-      }
+      // Simulate API failure
+      throw new Error(
+        "Instagram API is currently down due to expired access tokens. Please try again later."
+      );
     } catch (error) {
       console.error("Publishing failed:", error);
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to publish to Instagram";
+        "Instagram API is currently unavailable due to expired access tokens. Please contact support or try again later.";
       setError(errorMessage);
 
       if (onPublishError) {
@@ -358,7 +331,7 @@ export function InstagramPublisher({
               <Loader2 className="h-3 w-3 mr-1 animate-spin" />
             )}
             {apiStatus === "ready" && "API Ready"}
-            {apiStatus === "error" && "API Error"}
+            {apiStatus === "error" && "API Unavailable"}
             {apiStatus === "checking" && "Checking..."}
           </Badge>
         </div>
@@ -372,25 +345,30 @@ export function InstagramPublisher({
               <AlertCircle className="h-4 w-4" />
               <div className="flex-1">
                 <p className="text-sm font-medium">
-                  Instagram API Service Unavailable
+                  Instagram API Temporarily Unavailable
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  The Instagram API service is currently down. This could be due
-                  to:
+                  The Instagram publishing service is currently down due to
+                  expired access tokens.
                 </p>
                 <ul className="text-xs text-muted-foreground mt-1 ml-4 list-disc">
-                  <li>Server maintenance or high traffic</li>
-                  <li>API service temporarily unavailable</li>
-                  <li>Network connectivity issues</li>
+                  <li>Instagram API access tokens have expired</li>
+                  <li>Service needs to be renewed by administrator</li>
+                  <li>Publishing functionality is temporarily disabled</li>
                 </ul>
                 <p className="text-xs text-muted-foreground mt-1">
-                  The service usually recovers automatically within a few
-                  minutes.
+                  Please contact support or try again later. This issue will be
+                  resolved soon.
                 </p>
               </div>
-              <Button onClick={checkApiStatus} variant="outline" size="sm">
+              <Button
+                onClick={checkApiStatus}
+                variant="outline"
+                size="sm"
+                disabled
+              >
                 <RefreshCw className="h-3 w-3 mr-1" />
-                Retry
+                Check Status
               </Button>
             </div>
           </CardContent>
