@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -32,6 +32,7 @@ import {
   enhanceContentWithAI,
   generateContentFromFileName,
 } from "@/services/content-enhancement.service";
+import { toast } from "sonner";
 
 interface UploadedVideo {
   videoId: string;
@@ -52,6 +53,40 @@ export function YouTubeUploader() {
   const [error, setError] = useState<string | null>(null);
   const [enhancing, setEnhancing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check for uploaded content data from localStorage on mount
+  useEffect(() => {
+    const storedData = localStorage.getItem("youtube-upload-data");
+    if (storedData) {
+      try {
+        const uploadData = JSON.parse(storedData);
+
+        // Pre-populate form fields with the stored data
+        if (uploadData.title) setTitle(uploadData.title);
+        if (uploadData.description) setDescription(uploadData.description);
+        if (uploadData.tags) setTags(uploadData.tags);
+
+        // Clear the stored data after using it
+        localStorage.removeItem("youtube-upload-data");
+
+        // Show notification about pre-populated content
+        if (uploadData.type === "image") {
+          setError(null); // Clear any existing errors
+          toast.success(
+            "Generated image content loaded! Please select the image file to upload."
+          );
+        } else if (uploadData.type === "video") {
+          setError(null); // Clear any existing errors
+          toast.success(
+            "Generated video content loaded! Please select the video file to upload."
+          );
+        }
+      } catch (err) {
+        console.error("Failed to parse stored upload data:", err);
+        localStorage.removeItem("youtube-upload-data");
+      }
+    }
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;

@@ -134,9 +134,6 @@ export class InstagramService {
       // Use POST request with JSON payload as per API documentation
       const payload = { action, ...data };
 
-      console.log("Making Instagram API request to:", url);
-      console.log("Payload:", payload);
-
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -314,7 +311,6 @@ export class InstagramService {
   async isReady(): Promise<boolean> {
     try {
       const health = await this.healthCheck();
-      console.log("Health check response:", health);
 
       // For now, just check if the API is responding (status is healthy)
       // You can adjust this logic based on your API's actual response

@@ -108,7 +108,6 @@ export function VoiceoverStudio() {
       };
 
       setGenerationResult(mockResult);
-      console.log("Generated voiceover with settings:", voiceSettings);
     } catch (err) {
       setError("Failed to generate voiceover. Please try again.");
       console.error("Generation error:", err);

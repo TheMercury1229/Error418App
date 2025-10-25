@@ -20,6 +20,7 @@ import {
   Sparkles,
   AlertCircle,
   Loader2,
+  Youtube,
 } from "lucide-react";
 
 import { GeneratedVideo } from "../video-generation-hub";
@@ -28,9 +29,14 @@ import { downloadVideoFromUrl } from "@/lib/video-utils";
 interface VideoPreviewProps {
   video: GeneratedVideo | null;
   isGenerating: boolean;
+  onUploadToYouTube?: (video: GeneratedVideo) => void;
 }
 
-export function VideoPreview({ video, isGenerating }: VideoPreviewProps) {
+export function VideoPreview({
+  video,
+  isGenerating,
+  onUploadToYouTube,
+}: VideoPreviewProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -293,7 +299,7 @@ export function VideoPreview({ video, isGenerating }: VideoPreviewProps) {
         </Card>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Button
             onClick={handleDownload}
             className="bg-green-500 hover:bg-green-600 text-white"
@@ -310,6 +316,16 @@ export function VideoPreview({ video, isGenerating }: VideoPreviewProps) {
             )}
             {copied ? "Copied!" : "Share"}
           </Button>
+
+          {onUploadToYouTube && (
+            <Button
+              onClick={() => onUploadToYouTube(video)}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              <Youtube className="h-4 w-4 mr-2" />
+              YouTube
+            </Button>
+          )}
         </div>
       </div>
     );

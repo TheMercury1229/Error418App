@@ -7,25 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { PromptEnhancerButton } from "@/components/shared/prompt-enhancer";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   Upload,
   Image as ImageIcon,
   X,
   Sparkles,
-  Video,
-  Clock,
-  Palette,
-  Settings,
-  Zap,
   AlertCircle,
 } from "lucide-react";
 
@@ -35,75 +25,6 @@ interface VideoGenerationFormProps {
   onGenerate: (request: VideoGenerationRequest) => void;
   isGenerating: boolean;
 }
-
-const DURATION_OPTIONS = [
-  { value: 3, label: "3 seconds", description: "Quick animation" },
-  { value: 5, label: "5 seconds", description: "Standard length" },
-  { value: 8, label: "8 seconds", description: "Extended scene" },
-  { value: 10, label: "10 seconds", description: "Long sequence" },
-];
-
-const STYLE_OPTIONS = [
-  {
-    value: "cinematic",
-    label: "Cinematic",
-    description: "Movie-like quality with dramatic lighting",
-  },
-  {
-    value: "natural",
-    label: "Natural",
-    description: "Realistic and lifelike movement",
-  },
-  {
-    value: "artistic",
-    label: "Artistic",
-    description: "Creative and stylized interpretation",
-  },
-  { value: "anime", label: "Anime", description: "Japanese animation style" },
-  {
-    value: "vintage",
-    label: "Vintage",
-    description: "Retro and nostalgic aesthetic",
-  },
-];
-
-const QUALITY_OPTIONS = [
-  {
-    value: "sd",
-    label: "SD (480p)",
-    description: "Standard definition - faster generation",
-  },
-  {
-    value: "hd",
-    label: "HD (720p)",
-    description: "High definition - balanced quality",
-  },
-  {
-    value: "fhd",
-    label: "FHD (1080p)",
-    description: "Full HD - premium quality",
-  },
-  {
-    value: "4k",
-    label: "4K (2160p)",
-    description: "Ultra HD - maximum quality",
-  },
-];
-
-const ASPECT_RATIO_OPTIONS = [
-  {
-    value: "16:9",
-    label: "16:9",
-    description: "Widescreen (YouTube, landscape)",
-  },
-  {
-    value: "9:16",
-    label: "9:16",
-    description: "Vertical (TikTok, Instagram Stories)",
-  },
-  { value: "1:1", label: "1:1", description: "Square (Instagram posts)" },
-  { value: "4:3", label: "4:3", description: "Classic TV format" },
-];
 
 export function VideoGenerationForm({
   onGenerate,
@@ -195,13 +116,13 @@ export function VideoGenerationForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Prompt Input */}
       <div className="space-y-2">
-        <Label htmlFor="prompt" className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-2">
           <Sparkles className="h-4 w-4 text-purple-500" />
-          Video Prompt
+          <span className="font-medium">Video Prompt</span>
           <Badge variant="outline" className="text-xs">
             {prompt.length}/1000
           </Badge>
-        </Label>
+        </div>
         <Textarea
           id="prompt"
           placeholder="Describe the video you want to create... e.g., 'A gentle breeze moving through the trees with birds flying in the background, cinematic slow motion'"
@@ -209,32 +130,27 @@ export function VideoGenerationForm({
           onChange={(e) => setPrompt(e.target.value)}
           className="min-h-24 resize-none"
           maxLength={1000}
+          disabled={isGenerating}
         />
-        {errors.prompt && (
-          <p className="text-sm text-destructive flex items-center gap-1">
-            <AlertCircle className="h-3 w-3" />
-            {errors.prompt}
-          </p>
-        )}
-        <p className="text-xs text-muted-foreground">
-          💡 Be specific about motion, camera angles, and atmosphere for best
-          results
-        </p>
-      </div>
-
-      {/* API Info */}
-      <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-        <div className="flex items-start gap-2">
-          <Sparkles className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-medium text-green-900 dark:text-green-100">
-              Powered by Advanced AI
-            </p>
-            <p className="text-green-700 dark:text-green-300">
-              Video generation typically takes 1-2 minutes. Please keep this
-              page open during processing.
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            {errors.prompt && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.prompt}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              💡 Be specific about motion, camera angles, and atmosphere for
+              best results
             </p>
           </div>
+          <PromptEnhancerButton
+            prompt={prompt}
+            onPromptChange={setPrompt}
+            context="video-generation"
+            disabled={isGenerating}
+          />
         </div>
       </div>
 
@@ -324,20 +240,6 @@ export function VideoGenerationForm({
           </>
         )}
       </Button>
-
-      {/* Progress Bar (when generating) */}
-      {isGenerating && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span>AI is creating your video...</span>
-            <span>This may take several minutes</span>
-          </div>
-          <Progress value={33} className="h-2" />
-          <p className="text-xs text-muted-foreground text-center">
-            Please keep this tab open while generation is in progress
-          </p>
-        </div>
-      )}
     </form>
   );
 }

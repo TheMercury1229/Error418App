@@ -3,7 +3,17 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Video, Sparkles, Clock, Play, AlertCircle, X } from "lucide-react";
+import {
+  Video,
+  Sparkles,
+  Clock,
+  Play,
+  AlertCircle,
+  X,
+  Youtube,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import { VideoGenerationForm } from "@/features/ai-video/components/video-generation-form";
 import { VideoPreview } from "@/features/ai-video/components/video-preview";
@@ -38,6 +48,7 @@ export interface GeneratedVideo {
 }
 
 export function VideoGenerationHub() {
+  const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentVideo, setCurrentVideo] = useState<GeneratedVideo | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -126,13 +137,22 @@ export function VideoGenerationHub() {
         });
       }, 5000); // Update every 5 seconds instead of 2 seconds
 
-      // Call the actual API
-      console.log("Starting video generation with API...");
-      const apiResponse: VideoGenerationApiResponse =
-        await videoGenerationService.generateVideo({
-          image: request.image,
-          prompt: request.prompt,
-        });
+      // Call the new API that handles Cloudinary upload
+      const formData = new FormData();
+      formData.append("image", request.image);
+      formData.append("prompt", request.prompt);
+
+      const response = await fetch("/api/generate-video", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate video");
+      }
+
+      const apiResponse = await response.json();
 
       // Clear progress interval
       if (progressInterval) {
@@ -144,8 +164,8 @@ export function VideoGenerationHub() {
         ...newVideo,
         status: "completed",
         progress: 100,
-        videoUrl: apiResponse.video_url,
-        prompt: apiResponse.prompt, // Use the prompt returned by API
+        videoUrl: apiResponse.videoUrl, // Use the Cloudinary URL
+        prompt: apiResponse.prompt,
       };
 
       setCurrentVideo(completedVideo);
@@ -153,12 +173,7 @@ export function VideoGenerationHub() {
         prev.map((video) => (video.id === newVideo.id ? completedVideo : video))
       );
 
-      console.log("Video generation completed:", {
-        message: apiResponse.message,
-        videoUrl: apiResponse.video_url,
-        videoUri: apiResponse.video_uri,
-        prompt: apiResponse.prompt,
-      });
+      toast.success("Video generated and saved to your gallery!");
     } catch (error) {
       console.error("Video generation failed:", error);
 
@@ -187,6 +202,32 @@ export function VideoGenerationHub() {
       setTimeout(() => setErrorMessage(null), 10000);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleUploadToYouTube = (video: GeneratedVideo) => {
+    if (video && video.videoUrl) {
+      // Store the data in localStorage to pass to the upload page
+      const uploadData = {
+        type: "video",
+        videoUrl: video.videoUrl,
+        title: `AI Generated Video - ${new Date().toLocaleDateString()}`,
+        description: `Generated video with prompt: ${video.prompt}`,
+        tags: "AI,Generated,Video,Animation",
+        prompt: video.prompt,
+        timestamp: Date.now(),
+        duration: video.duration,
+        quality: video.quality,
+        aspectRatio: video.aspectRatio,
+      };
+
+      localStorage.setItem("youtube-upload-data", JSON.stringify(uploadData));
+
+      // Navigate to the upload tab in dashboard
+      router.push("/dashboard?tab=upload");
+      toast.success("Redirecting to YouTube upload...");
+    } else {
+      toast.error("Video not available for upload");
     }
   };
 
@@ -275,7 +316,11 @@ export function VideoGenerationHub() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <VideoPreview video={currentVideo} isGenerating={isGenerating} />
+            <VideoPreview
+              video={currentVideo}
+              isGenerating={isGenerating}
+              onUploadToYouTube={handleUploadToYouTube}
+            />
           </CardContent>
         </Card>
       </div>

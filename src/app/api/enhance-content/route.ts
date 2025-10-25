@@ -6,8 +6,15 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, tags, videoFileName, context } =
-      await request.json();
+    const {
+      title,
+      description,
+      tags,
+      videoFileName,
+      context,
+      promptContext,
+      enhancementPrompt,
+    } = await request.json();
 
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
@@ -16,11 +23,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     let prompt = "";
 
-    if (context === "generate_from_filename") {
+    if (context === "enhance_prompt") {
+      // Handle prompt enhancement for different contexts
+      prompt =
+        enhancementPrompt ||
+        `
+You are an expert prompt engineer. Enhance this prompt to be more detailed, specific, and effective:
+
+Original prompt: "${title}"
+
+Provide an enhanced version that is more descriptive and will produce better results.
+
+Please respond in this exact JSON format:
+{
+  "enhancedPrompt": "enhanced prompt here"
+}`;
+    } else if (context === "generate_from_filename") {
       // Generate content from scratch based on filename
       prompt = `
 You are a YouTube content optimization expert. Based on the video file name "${videoFileName}", generate optimized YouTube video metadata.
@@ -65,18 +87,9 @@ Please respond in this exact JSON format:
 }`;
     }
 
-    console.log("Sending prompt to Gemini:", {
-      title,
-      description,
-      tags,
-      context,
-    });
-
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-
-    console.log("Gemini response:", text);
 
     // Parse JSON response from Gemini
     try {
@@ -88,7 +101,25 @@ Please respond in this exact JSON format:
 
       const enhancedContent = JSON.parse(jsonMatch[0]);
 
-      // Validate the response structure
+      // Handle prompt enhancement response
+      if (context === "enhance_prompt") {
+        const enhancedPrompt =
+          enhancedContent.enhancedPrompt ||
+          enhancedContent.enhancedTitle ||
+          enhancedContent.enhanced_prompt ||
+          enhancedContent.prompt ||
+          title;
+
+        return NextResponse.json({
+          success: true,
+          enhanced: {
+            enhancedPrompt: enhancedPrompt,
+            enhancedTitle: enhancedPrompt, // Also provide as enhancedTitle for compatibility
+          },
+        });
+      }
+
+      // Validate the response structure for content enhancement
       if (
         !enhancedContent.enhancedTitle ||
         !enhancedContent.enhancedDescription ||

@@ -1,18 +1,13 @@
-import fs from "fs";
-import path from "path";
-import os from "os";
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
-
-// Use the temp directory for token storage
-const TOKEN_PATH = path.join(os.tmpdir(), "token.json");
+import { YouTubeTokenService } from "@/services/youtube-token.service";
 
 export async function GET() {
   try {
     // Debug output
     const debug: {
-      tokenPath: string;
-      tokenExists: boolean;
+      tokenStorage: string;
+      hasValidTokens: boolean;
       env: {
         hasClientId: boolean;
         hasClientSecret: boolean;
@@ -20,19 +15,18 @@ export async function GET() {
         redirectUri: string | undefined;
         nodeEnv: "development" | "production" | "test" | undefined;
       };
-      osTempDir: string;
       token?: {
         hasAccessToken: boolean;
         hasRefreshToken: boolean;
         expiry: string | null;
         isExpired: boolean;
-        tokenType: string;
-        scope: string;
+        tokenType?: string;
+        scope?: string;
       };
       tokenReadError?: string;
     } = {
-      tokenPath: TOKEN_PATH,
-      tokenExists: fs.existsSync(TOKEN_PATH),
+      tokenStorage: "database",
+      hasValidTokens: await YouTubeTokenService.hasValidTokens(),
       env: {
         hasClientId: !!process.env.GOOGLE_CLIENT_ID,
         hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
@@ -40,27 +34,27 @@ export async function GET() {
         redirectUri: process.env.GOOGLE_REDIRECT_URI,
         nodeEnv: process.env.NODE_ENV,
       },
-      osTempDir: os.tmpdir(),
     };
 
     // Add token data if available
-    if (debug.tokenExists) {
-      try {
-        const tokenData = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf-8"));
+    try {
+      const tokenData = await YouTubeTokenService.getTokens();
+      if (tokenData) {
         debug.token = {
           hasAccessToken: !!tokenData.access_token,
           hasRefreshToken: !!tokenData.refresh_token,
           expiry: tokenData.expiry_date
             ? new Date(tokenData.expiry_date).toISOString()
             : null,
-          isExpired:
-            tokenData.expiry_date && Date.now() > tokenData.expiry_date,
+          isExpired: !!(
+            tokenData.expiry_date && Date.now() > tokenData.expiry_date
+          ),
           tokenType: tokenData.token_type,
           scope: tokenData.scope,
         };
-      } catch (e) {
-        debug.tokenReadError = (e as Error).message;
       }
+    } catch (e) {
+      debug.tokenReadError = (e as Error).message;
     }
 
     return NextResponse.json(debug);

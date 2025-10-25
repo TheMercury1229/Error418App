@@ -8,6 +8,7 @@ import {
   Instagram,
   Eye,
   Image,
+  User,
 } from "lucide-react";
 
 export const navigation = [
@@ -45,5 +46,10 @@ export const navigation = [
     name: "Voiceovers",
     href: "/voiceovers",
     icon: Mic,
+  },
+  {
+    name: "Profile",
+    href: "/profile",
+    icon: User,
   },
 ];

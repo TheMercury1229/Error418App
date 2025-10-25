@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PromptEnhancerButton } from "@/components/shared/prompt-enhancer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Image,
@@ -25,8 +26,10 @@ import {
   AlertCircle,
   CheckCircle,
   X,
+  Youtube,
 } from "lucide-react";
 import { aiImageHelperService } from "@/services/ai-image-helper.service";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 interface ImageStudioProps {
@@ -34,6 +37,7 @@ interface ImageStudioProps {
 }
 
 export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"generate" | "edit">("generate");
   const [prompt, setPrompt] = useState("");
   const [caption, setCaption] = useState("");
@@ -43,54 +47,74 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [apiStatus, setApiStatus] = useState<'ready' | 'error'>('ready');
+  const [apiStatus, setApiStatus] = useState<"ready" | "error">("ready");
 
   const handleGenerateImage = async () => {
     if (!prompt.trim()) {
-      setError('Please enter a prompt for image generation');
+      setError("Please enter a prompt for image generation");
       return;
     }
-
 
     setIsGenerating(true);
     setError(null);
     setSuccess(null);
 
     try {
-      console.log('Generating image with prompt:', prompt);
-
-      const result = await aiImageHelperService.generateImage({
-        prompt: prompt,
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate image");
+      }
+
+      const result = await response.json();
+
       if (result.success && result.imageBlob) {
-        const imageUrl = aiImageHelperService.blobToObjectURL(result.imageBlob);
-        setGeneratedImage(imageUrl);
-        setPreviewUrl(imageUrl);
+        setGeneratedImage(result.imageBlob);
+        setPreviewUrl(result.imageBlob);
 
         // Generate caption automatically
         await handleGenerateCaption();
 
-        toast.success('Image generated successfully!');
-        setSuccess('Image generated successfully!');
+        toast.success("Image generated and saved to your gallery!");
+        setSuccess("Image generated and saved successfully!");
 
         if (onImageGenerated) {
-          onImageGenerated(imageUrl, caption);
+          onImageGenerated(result.imageBlob, caption);
         }
       } else {
-        throw new Error(result.error || 'Failed to generate image');
+        throw new Error(result.error || "Failed to generate image");
       }
     } catch (error) {
-      console.error('Image generation error:', error);
-      let errorMessage = 'Failed to generate image';
+      console.error("Image generation error:", error);
+      let errorMessage = "Failed to generate image";
 
       if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
-          errorMessage = 'AI service is currently unavailable. Please check your internet connection and try again.';
-        } else if (error.message.includes('404') || error.message.includes('Not Found')) {
-          errorMessage = 'AI service endpoint not found. Please contact support.';
-        } else if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) {
-          errorMessage = 'AI service is temporarily down. Please try again in a few minutes.';
+        if (
+          error.message.includes("Failed to fetch") ||
+          error.message.includes("ERR_NAME_NOT_RESOLVED")
+        ) {
+          errorMessage =
+            "AI service is currently unavailable. Please check your internet connection and try again.";
+        } else if (
+          error.message.includes("404") ||
+          error.message.includes("Not Found")
+        ) {
+          errorMessage =
+            "AI service endpoint not found. Please contact support.";
+        } else if (
+          error.message.includes("500") ||
+          error.message.includes("502") ||
+          error.message.includes("503")
+        ) {
+          errorMessage =
+            "AI service is temporarily down. Please try again in a few minutes.";
         } else {
           errorMessage = error.message;
         }
@@ -114,16 +138,18 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
       // Generate caption based on the prompt
       const generatedCaption = await generateCaptionFromPrompt(prompt);
       setCaption(generatedCaption);
-      toast.success('Caption generated successfully!');
+      toast.success("Caption generated successfully!");
     } catch (error) {
-      console.error('Caption generation error:', error);
-      toast.error('Failed to generate caption');
+      console.error("Caption generation error:", error);
+      toast.error("Failed to generate caption");
     } finally {
       setIsGeneratingCaption(false);
     }
   };
 
-  const generateCaptionFromPrompt = async (imagePrompt: string): Promise<string> => {
+  const generateCaptionFromPrompt = async (
+    imagePrompt: string
+  ): Promise<string> => {
     // Simple caption generation based on prompt
     const captionTemplates = [
       `✨ ${imagePrompt} ✨`,
@@ -134,7 +160,8 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
     ];
 
     // Select a random template and customize it
-    const template = captionTemplates[Math.floor(Math.random() * captionTemplates.length)];
+    const template =
+      captionTemplates[Math.floor(Math.random() * captionTemplates.length)];
 
     // Add some hashtags based on the prompt
     const hashtags = generateHashtags(imagePrompt);
@@ -142,37 +169,66 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
   };
 
   const generateHashtags = (prompt: string): string => {
-    const words = prompt.toLowerCase().split(' ').slice(0, 3);
-    const baseHashtags = words.map(word => `#${word.replace(/[^a-z0-9]/g, '')}`).filter(tag => tag.length > 1);
+    const words = prompt.toLowerCase().split(" ").slice(0, 3);
+    const baseHashtags = words
+      .map((word) => `#${word.replace(/[^a-z0-9]/g, "")}`)
+      .filter((tag) => tag.length > 1);
 
-    const additionalHashtags = ['#aiart', '#digitalart', '#creative', '#artwork'];
-    return [...baseHashtags, ...additionalHashtags.slice(0, 3)].join(' ');
+    const additionalHashtags = [
+      "#aiart",
+      "#digitalart",
+      "#creative",
+      "#artwork",
+    ];
+    return [...baseHashtags, ...additionalHashtags.slice(0, 3)].join(" ");
   };
 
   const handleCopyCaption = () => {
     if (caption) {
       navigator.clipboard.writeText(caption);
-      toast.success('Caption copied to clipboard!');
+      toast.success("Caption copied to clipboard!");
     }
   };
 
   const handleDownloadImage = () => {
     if (generatedImage) {
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = generatedImage;
       link.download = `ai-generated-image-${Date.now()}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success('Image downloaded successfully!');
+      toast.success("Image downloaded successfully!");
     }
   };
 
   const handleUploadToInstagram = () => {
     if (generatedImage && caption) {
       // This would typically open the Instagram publisher with the generated content
-      console.log('Opening Instagram publisher with:', { image: generatedImage, caption });
-      toast.success('Opening Instagram publisher...');
+      toast.success("Opening Instagram publisher...");
+    }
+  };
+
+  const handleUploadToYouTube = () => {
+    if (generatedImage && caption) {
+      // Store the data in localStorage to pass to the upload page
+      const uploadData = {
+        type: "image",
+        imageUrl: generatedImage,
+        title: `AI Generated Image - ${new Date().toLocaleDateString()}`,
+        description: caption || `Generated with prompt: ${prompt}`,
+        tags: "AI,Generated,Image,Art",
+        prompt: prompt,
+        timestamp: Date.now(),
+      };
+
+      localStorage.setItem("youtube-upload-data", JSON.stringify(uploadData));
+
+      // Navigate to the upload tab in dashboard
+      router.push("/dashboard?tab=upload");
+      toast.success("Redirecting to YouTube upload...");
+    } else {
+      toast.error("Please generate an image first");
     }
   };
 
@@ -199,18 +255,22 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant={apiStatus === 'ready' ? 'default' : 'destructive'}>
-            {apiStatus === 'ready' && <CheckCircle className="h-3 w-3 mr-1" />}
-            {apiStatus === 'error' && <AlertCircle className="h-3 w-3 mr-1" />}
-            {apiStatus === 'ready' && 'AI Ready'}
-            {apiStatus === 'error' && 'AI Error'}
+          <Badge variant={apiStatus === "ready" ? "default" : "destructive"}>
+            {apiStatus === "ready" && <CheckCircle className="h-3 w-3 mr-1" />}
+            {apiStatus === "error" && <AlertCircle className="h-3 w-3 mr-1" />}
+            {apiStatus === "ready" && "AI Ready"}
+            {apiStatus === "error" && "AI Error"}
           </Badge>
         </div>
       </div>
 
-
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as "generate" | "edit")}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value: string) =>
+          setActiveTab(value as "generate" | "edit")
+        }
+      >
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="generate" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
@@ -235,7 +295,9 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="prompt">Describe the image you want to create:</Label>
+                  <Label htmlFor="prompt">
+                    Describe the image you want to create:
+                  </Label>
                   <Textarea
                     id="prompt"
                     value={prompt}
@@ -243,10 +305,20 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
                     placeholder="e.g., A serene mountain landscape at sunset with a crystal clear lake reflecting the orange and pink sky, digital art style..."
                     rows={6}
                     className="resize-none"
+                    disabled={isGenerating}
+                    maxLength={500}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {prompt.length}/500 characters
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {prompt.length}/500 characters
+                    </p>
+                    <PromptEnhancerButton
+                      prompt={prompt}
+                      onPromptChange={setPrompt}
+                      context="image-generation"
+                      disabled={isGenerating}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -305,7 +377,7 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
                         src={generatedImage}
                         alt="Generated AI Image"
                         className="w-full rounded-lg"
-                        style={{ maxHeight: '300px', objectFit: 'cover' }}
+                        style={{ maxHeight: "300px", objectFit: "cover" }}
                       />
                       <Badge className="absolute top-2 left-2 bg-purple-600">
                         <Sparkles className="h-3 w-3 mr-1" />
@@ -314,13 +386,29 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={handleDownloadImage}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadImage}
+                      >
                         <Download className="h-4 w-4 mr-1" />
                         Download
                       </Button>
-                      <Button variant="outline" size="sm" onClick={handleUploadToInstagram}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUploadToInstagram}
+                      >
                         <Share className="h-4 w-4 mr-1" />
                         Share to Instagram
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUploadToYouTube}
+                      >
+                        <Youtube className="h-4 w-4 mr-1" />
+                        Upload to YouTube
                       </Button>
                     </div>
                   </div>
@@ -329,7 +417,8 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
                     <Image className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <h3 className="font-medium mb-2">No Image Generated</h3>
                     <p className="text-sm text-muted-foreground">
-                      Enter a prompt and click "Generate Image" to create your AI artwork
+                      Enter a prompt and click "Generate Image" to create your
+                      AI artwork
                     </p>
                   </div>
                 )}
@@ -365,11 +454,19 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={handleCopyCaption}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyCaption}
+                  >
                     <Copy className="h-4 w-4 mr-1" />
                     Copy Caption
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setCaption('')}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCaption("")}
+                  >
                     <X className="h-4 w-4 mr-1" />
                     Clear
                   </Button>
@@ -442,7 +539,11 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button onClick={handleGenerateImage} variant="outline" size="sm">
+                <Button
+                  onClick={handleGenerateImage}
+                  variant="outline"
+                  size="sm"
+                >
                   <RefreshCw className="h-3 w-3 mr-1" />
                   Retry
                 </Button>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -60,6 +61,7 @@ interface YouTubeAnalyticsResponse {
 }
 
 export function YouTubeAnalytics() {
+  const searchParams = useSearchParams();
   const [data, setData] = useState<YouTubeAnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
@@ -85,6 +87,14 @@ export function YouTubeAnalytics() {
 
     fetchAnalytics();
   }, []);
+
+  // Handle URL parameters to switch to upload tab
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "upload") {
+      setActiveTab("upload");
+    }
+  }, [searchParams]);
 
   // Format metrics for display
   const formatNumber = (num: number | string) => {
