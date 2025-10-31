@@ -9,6 +9,8 @@ import {
   Eye,
   Image,
   User,
+  FolderOpen,
+  BarChart3,
 } from "lucide-react";
 
 export const navigation = [
@@ -46,6 +48,16 @@ export const navigation = [
     name: "Voiceovers",
     href: "/voiceovers",
     icon: Mic,
+  },
+  {
+    name: "Gallery",
+    href: "/gallery",
+    icon: FolderOpen,
+  },
+  {
+    name: "Analytics",
+    href: "/analytics",
+    icon: BarChart3,
   },
   {
     name: "Profile",

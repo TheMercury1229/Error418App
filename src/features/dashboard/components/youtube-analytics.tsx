@@ -26,6 +26,7 @@ import { format, parseISO, subDays } from "date-fns";
 import { Progress } from "@/components/ui/progress";
 import { YouTubeAuth } from "./youtube-auth";
 import { YouTubeUploader } from "./youtube-uploader";
+import { YouTubeAnalyticsDashboard } from "./youtube-analytics-dashboard";
 
 interface ChannelData {
   id: string;
@@ -255,8 +256,9 @@ export function YouTubeAnalytics() {
         className="w-full"
         onValueChange={setActiveTab}
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="upload">Upload</TabsTrigger>
         </TabsList>
 
@@ -388,9 +390,10 @@ export function YouTubeAnalytics() {
           </Card>
         </TabsContent>
 
-        {/* Performance Tab */}
-
-        {/* Audience Tab */}
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="mt-4">
+          <YouTubeAnalyticsDashboard />
+        </TabsContent>
 
         {/* Upload Tab */}
         <TabsContent value="upload" className="mt-4">

@@ -26,6 +26,8 @@ model User {
   instagramAnalytics InstagramAnalytics[]
   instagramAccount   InstagramAccount?
   generatedMedia     GeneratedMedia[]
+  creatorProfile     CreatorProfile?
+  youtubeAnalytics   YouTubeAnalytics[]
 }
 
 model Conversation {
@@ -158,6 +160,41 @@ model InstagramAccount {
   @@map("instagram_accounts")
 }
 
+model CreatorProfile {
+  id          String  @id @default(cuid())
+  displayName String?
+  bio         String?
+  email       String?
+  website     String?
+
+  contentGenres    String[] @default([])
+  targetAudience   String?
+  ageRange         String?
+  primaryPlatforms String[] @default([])
+
+  editingStyle     String?
+  colorPalette     String?
+  contentTone      String?
+  postingFrequency String?
+
+  primaryGoals     String[] @default([])
+  contentFocus     String[] @default([])
+  brandPartnership Boolean  @default(false)
+  monetization     Boolean  @default(false)
+
+  preferredFormats String[] @default([])
+  videoLength      String?
+  imageStyle       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clerkId String @unique
+  user    User   @relation(fields: [clerkId], references: [clerkId], onDelete: Cascade)
+
+  @@map("creator_profiles")
+}
+
 model GeneratedMedia {
   id                 String    @id @default(cuid())
   fileName           String
@@ -183,4 +220,44 @@ model GeneratedMedia {
 enum MediaType {
   IMAGE
   VIDEO
+}
+
+model YouTubeAnalytics {
+  id   String   @id @default(cuid())
+  date DateTime // Day for which the analytics data is stored
+
+  // Channel metrics
+  views             Int @default(0)
+  likes             Int @default(0)
+  comments          Int @default(0)
+  shares            Int @default(0)
+  subscribersGained Int @default(0)
+  subscribersLost   Int @default(0)
+  watchTimeMinutes  Int @default(0) // Total watch time in minutes
+
+  // Engagement metrics
+  averageViewDuration Int   @default(0) // In seconds
+  impressions         Int   @default(0)
+  clickThroughRate    Float @default(0.0) // CTR percentage
+
+  // Video metrics (optional - for individual video tracking)
+  videoId       String?
+  videoTitle    String?
+  videoViews    Int     @default(0)
+  videoLikes    Int     @default(0)
+  videoComments Int     @default(0)
+
+  // Raw analytics data from YouTube API
+  rawData Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User relation
+  clerkId String
+  user    User   @relation(fields: [clerkId], references: [clerkId], onDelete: Cascade)
+
+  // Unique constraint to prevent duplicate entries for same user/date
+  @@unique([clerkId, date])
+  @@map("youtube_analytics")
 }
