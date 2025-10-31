@@ -31,6 +31,11 @@ const envVars = {
   // AI Image Helper API
   AI_API_URL: process.env.AI_API_URL,
 
+  // Twitter OAuth
+  TWITTER_CLIENT_ID: process.env.TWITTER_CLIENT_ID,
+  TWITTER_CLIENT_SECRET: process.env.TWITTER_CLIENT_SECRET,
+  TWITTER_REDIRECT_URI: process.env.TWITTER_REDIRECT_URI,
+
   // Development/Testing
   NODE_ENV: process.env.NODE_ENV,
   USE_MOCK_DATA: process.env.USE_MOCK_DATA,

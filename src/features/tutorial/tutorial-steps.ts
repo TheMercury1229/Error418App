@@ -82,6 +82,36 @@ export const tutorialSteps: Record<TutorialPage, TutorialStep[]> = {
     },
   ],
 
+  twitter: [
+    {
+      title: "Twitter Integration",
+      content:
+        "Connect your Twitter account to publish tweets and view analytics directly from your dashboard.",
+      placement: "center",
+    },
+    {
+      title: "Authentication",
+      content:
+        "Click 'Connect Twitter Account' to authenticate with Twitter using OAuth 2.0.",
+      elementSelector: "button:contains('Connect Twitter Account')",
+      placement: "bottom",
+    },
+    {
+      title: "Tweet Composer",
+      content:
+        "Compose tweets with up to 280 characters and attach media files.",
+      elementSelector: "textarea",
+      placement: "top",
+    },
+    {
+      title: "Analytics Dashboard",
+      content:
+        "Monitor your Twitter performance including followers, engagement, and top tweets.",
+      elementSelector: ".grid",
+      placement: "top",
+    },
+  ],
+
   studio: [
     {
       title: "Content Studio",

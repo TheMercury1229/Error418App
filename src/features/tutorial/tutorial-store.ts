@@ -7,6 +7,7 @@ export type TutorialPage =
   | "dashboard"
   | "youtube"
   | "instagram"
+  | "twitter"
   | "studio"
   | "settings"
   | "scheduler"

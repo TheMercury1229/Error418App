@@ -21,6 +21,13 @@ model User {
   youtubeTokenType    String?
   youtubeScope        String?
 
+  // Twitter OAuth tokens
+  twitterAccessToken  String?
+  twitterRefreshToken String?
+  twitterTokenExpiry  DateTime?
+  twitterUserId       String?
+  twitterUsername     String?
+
   conversations      Conversation[]
   instagramPosts     InstagramPost[]
   instagramAnalytics InstagramAnalytics[]
