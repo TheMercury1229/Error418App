@@ -75,9 +75,9 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
 
       const result = await response.json();
 
-      if (result.success && result.imageBlob) {
-        setGeneratedImage(result.imageBlob);
-        setPreviewUrl(result.imageBlob);
+      if (result.success && result.cloudinaryUrl) {
+        setGeneratedImage(result.cloudinaryUrl);
+        setPreviewUrl(result.cloudinaryUrl);
 
         // Generate caption automatically
         await handleGenerateCaption();
@@ -86,7 +86,7 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
         setSuccess("Image generated and saved successfully!");
 
         if (onImageGenerated) {
-          onImageGenerated(result.imageBlob, caption);
+          onImageGenerated(result.cloudinaryUrl, caption);
         }
       } else {
         throw new Error(result.error || "Failed to generate image");

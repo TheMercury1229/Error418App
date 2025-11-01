@@ -1,6 +1,7 @@
 import { uploadToCloudinary, uploadVideoToCloudinary } from "@/lib/cloudinary";
 import prisma from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
+import { withUserEnsured } from "@/lib/user-utils";
 
 export interface MediaUploadOptions {
   fileName: string;
@@ -70,20 +71,22 @@ export class MediaService {
         ? mediaData.length
         : undefined;
 
-      // Save to database
-      const mediaRecord = await prisma.generatedMedia.create({
-        data: {
-          fileName: options.fileName,
-          originalName: options.originalName,
-          mediaType: options.mediaType,
-          fileSize,
-          cloudinaryUrl: uploadResult.url!,
-          cloudinaryPublicId: uploadResult.public_id!,
-          prompt: options.prompt,
-          metadata: options.metadata,
-          clerkId: userId,
-        },
-      });
+      // Save to database with user creation handling
+      const mediaRecord = await withUserEnsured(userId, () =>
+        prisma.generatedMedia.create({
+          data: {
+            fileName: options.fileName,
+            originalName: options.originalName,
+            mediaType: options.mediaType,
+            fileSize,
+            cloudinaryUrl: uploadResult.url!,
+            cloudinaryPublicId: uploadResult.public_id!,
+            prompt: options.prompt,
+            metadata: options.metadata,
+            clerkId: userId,
+          },
+        })
+      );
 
       return {
         success: true,
@@ -119,10 +122,12 @@ export class MediaService {
         whereClause.mediaType = mediaType;
       }
 
-      const media = await prisma.generatedMedia.findMany({
-        where: whereClause,
-        orderBy: { createdAt: "desc" },
-      });
+      const media = await withUserEnsured(userId, () =>
+        prisma.generatedMedia.findMany({
+          where: whereClause,
+          orderBy: { createdAt: "desc" },
+        })
+      );
 
       return {
         success: true,
@@ -153,12 +158,14 @@ export class MediaService {
       }
 
       // Get media record to ensure user owns it
-      const mediaRecord = await prisma.generatedMedia.findFirst({
-        where: {
-          id: mediaId,
-          clerkId: userId,
-        },
-      });
+      const mediaRecord = await withUserEnsured(userId, () =>
+        prisma.generatedMedia.findFirst({
+          where: {
+            id: mediaId,
+            clerkId: userId,
+          },
+        })
+      );
 
       if (!mediaRecord) {
         return { success: false, error: "Media not found or access denied" };
@@ -213,24 +220,26 @@ export class MediaService {
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
       const [totalImages, totalVideos, totalSizeResult, recentCount] =
-        await Promise.all([
-          prisma.generatedMedia.count({
-            where: { clerkId: userId, mediaType: "IMAGE" },
-          }),
-          prisma.generatedMedia.count({
-            where: { clerkId: userId, mediaType: "VIDEO" },
-          }),
-          prisma.generatedMedia.aggregate({
-            where: { clerkId: userId },
-            _sum: { fileSize: true },
-          }),
-          prisma.generatedMedia.count({
-            where: {
-              clerkId: userId,
-              createdAt: { gte: sevenDaysAgo },
-            },
-          }),
-        ]);
+        await withUserEnsured(userId, () =>
+          Promise.all([
+            prisma.generatedMedia.count({
+              where: { clerkId: userId, mediaType: "IMAGE" },
+            }),
+            prisma.generatedMedia.count({
+              where: { clerkId: userId, mediaType: "VIDEO" },
+            }),
+            prisma.generatedMedia.aggregate({
+              where: { clerkId: userId },
+              _sum: { fileSize: true },
+            }),
+            prisma.generatedMedia.count({
+              where: {
+                clerkId: userId,
+                createdAt: { gte: sevenDaysAgo },
+              },
+            }),
+          ])
+        );
 
       return {
         success: true,
