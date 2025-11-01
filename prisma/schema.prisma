@@ -21,6 +21,10 @@ model User {
   youtubeTokenType    String?
   youtubeScope        String?
 
+  // timestamps
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
   // Twitter OAuth tokens
   twitterAccessToken  String?
   twitterRefreshToken String?
@@ -194,6 +198,9 @@ model CreatorProfile {
   videoLength      String?
   imageStyle       String?
 
+  // Collaborator discovery
+  discoverable Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -241,6 +248,8 @@ model YouTubeAnalytics {
   shares            Int @default(0)
   subscribersGained Int @default(0)
   subscribersLost   Int @default(0)
+  // Total subscribers on the channel at the time of the snapshot
+  subscribersTotal  Int @default(0)
   watchTimeMinutes  Int @default(0) // Total watch time in minutes
 
   // Engagement metrics
@@ -275,24 +284,24 @@ model ScheduledPost {
   title       String?
   content     String
   mediaUrls   String[] @default([])
-  platform    String   // "twitter", "instagram", "linkedin", etc.
+  platform    String // "twitter", "instagram", "linkedin", etc.
   scheduledAt DateTime
   status      String   @default("scheduled") // "scheduled", "published", "failed", "draft"
   hashtags    String[] @default([])
-  
+
   // Publishing results
-  publishedAt DateTime?
-  publishedId String?   // Platform-specific post ID
-  publishedUrl String?  // Direct link to published post
-  errorMessage String?  // Error message if publishing failed
-  
+  publishedAt  DateTime?
+  publishedId  String? // Platform-specific post ID
+  publishedUrl String? // Direct link to published post
+  errorMessage String? // Error message if publishing failed
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // User relation
   clerkId String
   user    User   @relation(fields: [clerkId], references: [clerkId], onDelete: Cascade)
-  
+
   @@map("scheduled_posts")
 }

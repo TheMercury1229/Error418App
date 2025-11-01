@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -15,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   User,
@@ -65,6 +72,9 @@ interface CreatorProfile {
   preferredFormats: string[];
   videoLength: string;
   imageStyle: string;
+
+  // Collaborator Settings
+  discoverable: boolean;
 }
 
 const defaultProfile: CreatorProfile = {
@@ -87,6 +97,7 @@ const defaultProfile: CreatorProfile = {
   preferredFormats: [],
   videoLength: "",
   imageStyle: "",
+  discoverable: false,
 };
 
 export default function ProfilePage() {
@@ -723,6 +734,39 @@ export default function ProfilePage() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Collaboration Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Collaboration Settings
+          </CardTitle>
+          <CardDescription>
+            Control how other creators can discover and connect with you
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="discoverable" className="text-base">
+                Allow others to discover my profile
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Other creators with similar subscriber counts can find you for
+                potential collaborations
+              </p>
+            </div>
+            <Switch
+              id="discoverable"
+              checked={profile.discoverable}
+              onCheckedChange={(checked) =>
+                setProfile((prev) => ({ ...prev, discoverable: checked }))
+              }
+            />
           </div>
         </CardContent>
       </Card>

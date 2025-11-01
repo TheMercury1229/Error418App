@@ -9,6 +9,7 @@ import {
   Eye,
   Image,
   User,
+  Users,
   FolderOpen,
   BarChart3,
 } from "lucide-react";
@@ -58,6 +59,11 @@ export const navigation = [
     name: "Analytics",
     href: "/analytics",
     icon: BarChart3,
+  },
+  {
+    name: "Collaborators",
+    href: "/collaborators",
+    icon: Users,
   },
   {
     name: "Profile",

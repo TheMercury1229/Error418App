@@ -43,6 +43,66 @@ export class YouTubeTokenService {
         youtubeScope: tokens.scope || null,
       },
     });
+
+    // After saving tokens, attempt to fetch channel statistics (subscriber count)
+    try {
+      const oAuth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID!,
+        process.env.GOOGLE_CLIENT_SECRET!,
+        process.env.GOOGLE_REDIRECT_URI!
+      );
+
+      oAuth2Client.setCredentials({
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+      });
+
+      const youtube = google.youtube({ version: "v3", auth: oAuth2Client });
+
+      const channelsResp = await youtube.channels.list({
+        part: ["statistics"],
+        mine: true,
+      });
+
+      const items = channelsResp.data.items || [];
+      if (items.length > 0) {
+        const stats: any = items[0].statistics || {};
+        const subscriberCount = stats.subscriberCount
+          ? Number(stats.subscriberCount)
+          : 0;
+
+        // Upsert today's analytics snapshot with subscriber total
+        const today = new Date();
+        const snapshotDate = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate()
+        );
+
+        const upsertPayload: any = {
+          where: {
+            clerkId_date: {
+              clerkId: userId,
+              date: snapshotDate,
+            },
+          },
+          update: {
+            subscribersTotal: subscriberCount,
+            rawData: { channelStatistics: stats },
+          },
+          create: {
+            clerkId: userId,
+            date: snapshotDate,
+            subscribersTotal: subscriberCount,
+            rawData: { channelStatistics: stats },
+          },
+        };
+
+        await prisma.youTubeAnalytics.upsert(upsertPayload as any);
+      }
+    } catch (err) {
+      console.error("Failed to fetch channel statistics:", err);
+    }
   }
 
   /**
