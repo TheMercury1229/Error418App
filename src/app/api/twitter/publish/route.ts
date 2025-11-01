@@ -38,39 +38,12 @@ export async function POST(request: NextRequest) {
     }
 
     const twitterService = new TwitterService(tokens);
-    let mediaIds: string[] = [];
+    
 
-    // Upload media if provided
-    if (mediaUrls && mediaUrls.length > 0) {
-      try {
-        for (const mediaUrl of mediaUrls.slice(0, 4)) { // Twitter allows max 4 media items
-          // Fetch media from URL
-          const response = await fetch(mediaUrl);
-          if (!response.ok) {
-            throw new Error(`Failed to fetch media: ${response.statusText}`);
-          }
-
-          const mediaBuffer = Buffer.from(await response.arrayBuffer());
-          
-          // Determine media type based on content type or URL
-          const contentType = response.headers.get('content-type') || '';
-          const mediaType = contentType.startsWith('video/') ? 'video' : 'image';
-          
-          const mediaId = await twitterService.uploadMedia(mediaBuffer, mediaType);
-          mediaIds.push(mediaId);
-        }
-      } catch (mediaError) {
-        console.error('Media upload error:', mediaError);
-        return NextResponse.json(
-          { error: 'Failed to upload media' },
-          { status: 500 }
-        );
-      }
-    }
-
+    
     console.log('🚀 Publishing tweet...');
     // Post tweet
-    const tweet = await twitterService.postTweet(text, mediaIds.length > 0 ? mediaIds : undefined);
+    const tweet = await twitterService.postTweet(text);
     console.log('✅ Tweet published successfully:', {
       id: tweet.id,
       textLength: tweet.text.length

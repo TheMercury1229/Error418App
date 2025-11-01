@@ -25,41 +25,15 @@ import {
   isSameDay,
 } from "date-fns";
 
-// Mock data for scheduled posts
-const scheduledPosts = [
-  {
-    id: 1,
-    date: new Date(2025, 8, 18), // September 18, 2025
-    time: "09:00",
-    thumbnail: "/api/placeholder/40/40",
-    caption: "Morning motivation post...",
-    status: "scheduled",
-  },
-  {
-    id: 2,
-    date: new Date(2025, 8, 18), // September 18, 2025
-    time: "15:30",
-    thumbnail: "/api/placeholder/40/40",
-    caption: "Afternoon tips for productivity...",
-    status: "scheduled",
-  },
-  {
-    id: 3,
-    date: new Date(2025, 8, 20), // September 20, 2025
-    time: "12:00",
-    thumbnail: "/api/placeholder/40/40",
-    caption: "Weekend inspiration...",
-    status: "draft",
-  },
-  {
-    id: 4,
-    date: new Date(2025, 8, 22), // September 22, 2025
-    time: "10:00",
-    thumbnail: "/api/placeholder/40/40",
-    caption: "Monday motivation boost...",
-    status: "scheduled",
-  },
-];
+interface ScheduledPost {
+  id: string;
+  content: string;
+  scheduledAt: Date;
+  status: string;
+  platform: string;
+  hashtags: string[];
+  mediaUrls: string[];
+}
 
 export function SchedulerCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -67,6 +41,33 @@ export function SchedulerCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date()
   );
+  const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch scheduled posts
+  React.useEffect(() => {
+    const fetchScheduledPosts = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/scheduler/posts');
+        const data = await response.json();
+        
+        if (data.success) {
+          const posts = data.posts.map((post: any) => ({
+            ...post,
+            scheduledAt: new Date(post.scheduledAt),
+          }));
+          setScheduledPosts(posts);
+        }
+      } catch (error) {
+        console.error('Failed to fetch scheduled posts:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchScheduledPosts();
+  }, []);
 
   const handlePrevious = () => {
     setCurrentDate(subMonths(currentDate, 1));
@@ -77,7 +78,7 @@ export function SchedulerCalendar() {
   };
 
   const getPostsForDate = (date: Date) => {
-    return scheduledPosts.filter((post) => isSameDay(post.date, date));
+    return scheduledPosts.filter((post) => isSameDay(post.scheduledAt, date));
   };
 
   const renderMonthView = () => (
@@ -155,13 +156,18 @@ export function SchedulerCalendar() {
                   className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors"
                 >
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={post.thumbnail} alt="Post thumbnail" />
-                    <AvatarFallback>P</AvatarFallback>
+                    <AvatarImage 
+                      src={post.mediaUrls[0] || "/api/placeholder/40/40"} 
+                      alt="Post thumbnail" 
+                    />
+                    <AvatarFallback>{post.platform[0].toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <Clock className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-sm font-medium">{post.time}</span>
+                      <span className="text-sm font-medium">
+                        {format(post.scheduledAt, "h:mm a")}
+                      </span>
                       <Badge
                         variant={
                           post.status === "scheduled" ? "default" : "secondary"
@@ -172,11 +178,19 @@ export function SchedulerCalendar() {
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
-                      {post.caption}
+                      {post.content}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {post.platform}
                     </p>
                   </div>
                 </div>
               ))}
+            </div>
+          ) : isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+              <p>Loading scheduled posts...</p>
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
@@ -237,9 +251,14 @@ export function SchedulerCalendar() {
                       key={post.id}
                       className="text-xs p-1 bg-primary/10 rounded border-l-2 border-l-primary"
                     >
-                      <div className="font-medium">{post.time}</div>
+                      <div className="font-medium">
+                        {format(post.scheduledAt, "h:mm a")}
+                      </div>
                       <div className="text-muted-foreground truncate">
-                        {post.caption.slice(0, 20)}...
+                        {post.content.slice(0, 20)}...
+                      </div>
+                      <div className="text-xs text-blue-600">
+                        {post.platform}
                       </div>
                     </div>
                   ))}

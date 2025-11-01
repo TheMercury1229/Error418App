@@ -10,6 +10,11 @@ import { TutorialButton } from "@/features/tutorial/tutorial-button";
 
 export function PostScheduler() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handlePostCreated = () => {
+    setRefreshKey(prev => prev + 1); // Trigger refresh
+  };
 
   return (
     <div className="space-y-8">
@@ -36,13 +41,17 @@ export function PostScheduler() {
       </div>
 
       {/* Calendar View */}
-      <SchedulerCalendar />
+      <SchedulerCalendar key={`calendar-${refreshKey}`} />
 
       {/* Scheduled Posts List */}
-      <ScheduledPostsList />
+      <ScheduledPostsList key={`list-${refreshKey}`} />
 
       {/* New Post Modal */}
-      <NewPostModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+      <NewPostModal 
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen}
+        onPostCreated={handlePostCreated}
+      />
     </div>
   );
 }

@@ -33,75 +33,60 @@ import {
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 
-// Mock data for scheduled posts
-const scheduledPostsData = [
-  {
-    id: 1,
-    thumbnail: "/api/placeholder/60/60",
-    caption:
-      "Tips for better social media engagement and building authentic connections with your audience...",
-    scheduledDate: new Date(2025, 8, 18, 9, 0), // Sep 18, 2025 at 9:00 AM
-    status: "scheduled" as const,
-    platform: "Instagram",
-    hashtags: ["#socialmedia", "#tips", "#engagement"],
-  },
-  {
-    id: 2,
-    thumbnail: "/api/placeholder/60/60",
-    caption:
-      "Behind the scenes of our content creation process and how we stay consistent...",
-    scheduledDate: new Date(2025, 8, 18, 15, 30), // Sep 18, 2025 at 3:30 PM
-    status: "scheduled" as const,
-    platform: "LinkedIn",
-    hashtags: ["#contentcreation", "#productivity", "#business"],
-  },
-  {
-    id: 3,
-    thumbnail: "/api/placeholder/60/60",
-    caption:
-      "Weekend inspiration: How to find balance between work and personal life...",
-    scheduledDate: new Date(2025, 8, 20, 12, 0), // Sep 20, 2025 at 12:00 PM
-    status: "draft" as const,
-    platform: "Instagram",
-    hashtags: ["#weekend", "#inspiration", "#worklife"],
-  },
-  {
-    id: 4,
-    thumbnail: "/api/placeholder/60/60",
-    caption:
-      "Monday motivation: Start your week with these productivity hacks...",
-    scheduledDate: new Date(2025, 8, 22, 10, 0), // Sep 22, 2025 at 10:00 AM
-    status: "scheduled" as const,
-    platform: "Twitter",
-    hashtags: ["#monday", "#motivation", "#productivity"],
-  },
-  {
-    id: 5,
-    thumbnail: "/api/placeholder/60/60",
-    caption:
-      "Successfully published! Check out our latest carousel post about design trends...",
-    scheduledDate: new Date(2025, 8, 15, 14, 0), // Sep 15, 2025 at 2:00 PM
-    status: "published" as const,
-    platform: "Instagram",
-    hashtags: ["#design", "#trends", "#creative"],
-  },
-  {
-    id: 6,
-    thumbnail: "/api/placeholder/60/60",
-    caption:
-      "Quick tutorial on creating engaging video content for social media...",
-    scheduledDate: new Date(2025, 8, 25, 16, 0), // Sep 25, 2025 at 4:00 PM
-    status: "draft" as const,
-    platform: "TikTok",
-    hashtags: ["#tutorial", "#video", "#content"],
-  },
-];
+interface ScheduledPost {
+  id: string;
+  title?: string;
+  content: string;
+  caption: string; // Add caption field for compatibility
+  mediaUrls: string[];
+  platform: string;
+  scheduledAt: Date;
+  scheduledDate: Date; // Add scheduledDate field for compatibility
+  status: string;
+  hashtags: string[];
+  publishedAt?: Date;
+  publishedId?: string;
+  publishedUrl?: string;
+  thumbnail?: string; // Add thumbnail field
+}
 
 type StatusFilter = "all" | "scheduled" | "draft" | "published";
 
 export function ScheduledPostsList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch scheduled posts from API
+  React.useEffect(() => {
+    const fetchScheduledPosts = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/scheduler/posts');
+        const data = await response.json();
+
+        if (data.success) {
+          const posts = data.posts.map((post: any) => ({
+            ...post,
+            caption: post.content || post.caption || '',
+            scheduledAt: new Date(post.scheduledAt),
+            scheduledDate: new Date(post.scheduledAt),
+            publishedAt: post.publishedAt ? new Date(post.publishedAt) : undefined,
+            hashtags: post.hashtags || [],
+            thumbnail: post.mediaUrls?.[0] || undefined,
+          }));
+          setScheduledPosts(posts);
+        }
+      } catch (error) {
+        console.error('Failed to fetch scheduled posts:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchScheduledPosts();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -127,10 +112,10 @@ export function ScheduledPostsList() {
     }
   };
 
-  const filteredPosts = scheduledPostsData.filter((post) => {
+  const filteredPosts = scheduledPosts.filter((post: ScheduledPost) => {
     const matchesSearch =
-      post.caption.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.hashtags.some((tag) =>
+      post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.hashtags.some((tag: string) =>
         tag.toLowerCase().includes(searchQuery.toLowerCase())
       );
     const matchesStatus =
@@ -138,7 +123,7 @@ export function ScheduledPostsList() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleAction = (action: string, postId: number) => {
+  const handleAction = (action: string, postId: string) => {
     console.log(`${action} post ${postId}`);
     // Handle actions here
   };
@@ -207,17 +192,26 @@ export function ScheduledPostsList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPosts.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell
                     colSpan={6}
                     className="text-center py-8 text-muted-foreground"
                   >
-                    No posts found matching your criteria
+                    Loading posts...
+                  </TableCell>
+                </TableRow>
+              ) : filteredPosts.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    No posts 
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPosts.map((post) => (
+                filteredPosts.map((post: ScheduledPost) => (
                   <TableRow key={post.id}>
                     <TableCell>
                       <Avatar className="h-12 w-12">
@@ -231,9 +225,9 @@ export function ScheduledPostsList() {
 
                     <TableCell className="max-w-[300px]">
                       <div className="space-y-1">
-                        <p className="text-sm line-clamp-2">{post.caption}</p>
+                        <p className="text-sm line-clamp-2">{post.content}</p>
                         <div className="flex flex-wrap gap-1">
-                          {post.hashtags.slice(0, 3).map((tag, index) => (
+                          {post.hashtags.slice(0, 3).map((tag: string, index: number) => (
                             <span
                               key={index}
                               className="text-xs text-blue-600 bg-blue-50 px-1 rounded"
@@ -253,10 +247,10 @@ export function ScheduledPostsList() {
                     <TableCell>
                       <div className="text-sm">
                         <div className="font-medium">
-                          {format(post.scheduledDate, "MMM d, yyyy")}
+                          {format(post.scheduledAt, "MMM d, yyyy")}
                         </div>
                         <div className="text-muted-foreground">
-                          {format(post.scheduledDate, "h:mm a")}
+                          {format(post.scheduledAt, "h:mm a")}
                         </div>
                       </div>
                     </TableCell>
@@ -324,14 +318,14 @@ export function ScheduledPostsList() {
         {filteredPosts.length > 0 && (
           <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
             <div>
-              Showing {filteredPosts.length} of {scheduledPostsData.length}{" "}
+              Showing {filteredPosts.length} of {scheduledPosts.length}{" "}
               posts
             </div>
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="flex items-center gap-1">
                 <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                 {
-                  scheduledPostsData.filter((p) => p.status === "scheduled")
+                  scheduledPosts.filter((p: ScheduledPost) => p.status === "scheduled")
                     .length
                 }{" "}
                 Scheduled
@@ -339,14 +333,14 @@ export function ScheduledPostsList() {
               <Badge variant="outline" className="flex items-center gap-1">
                 <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
                 {
-                  scheduledPostsData.filter((p) => p.status === "draft").length
+                  scheduledPosts.filter((p: ScheduledPost) => p.status === "draft").length
                 }{" "}
                 Drafts
               </Badge>
               <Badge variant="outline" className="flex items-center gap-1">
                 <div className="h-2 w-2 rounded-full bg-green-500"></div>
                 {
-                  scheduledPostsData.filter((p) => p.status === "published")
+                  scheduledPosts.filter((p: ScheduledPost) => p.status === "published")
                     .length
                 }{" "}
                 Published

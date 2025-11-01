@@ -35,6 +35,7 @@ model User {
   generatedMedia     GeneratedMedia[]
   creatorProfile     CreatorProfile?
   youtubeAnalytics   YouTubeAnalytics[]
+  scheduledPosts     ScheduledPost[]
 }
 
 model Conversation {
@@ -267,4 +268,31 @@ model YouTubeAnalytics {
   // Unique constraint to prevent duplicate entries for same user/date
   @@unique([clerkId, date])
   @@map("youtube_analytics")
+}
+
+model ScheduledPost {
+  id          String   @id @default(cuid())
+  title       String?
+  content     String
+  mediaUrls   String[] @default([])
+  platform    String   // "twitter", "instagram", "linkedin", etc.
+  scheduledAt DateTime
+  status      String   @default("scheduled") // "scheduled", "published", "failed", "draft"
+  hashtags    String[] @default([])
+  
+  // Publishing results
+  publishedAt DateTime?
+  publishedId String?   // Platform-specific post ID
+  publishedUrl String?  // Direct link to published post
+  errorMessage String?  // Error message if publishing failed
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // User relation
+  clerkId String
+  user    User   @relation(fields: [clerkId], references: [clerkId], onDelete: Cascade)
+  
+  @@map("scheduled_posts")
 }
