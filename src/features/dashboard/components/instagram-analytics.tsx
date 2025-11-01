@@ -13,22 +13,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertCircle,
   Instagram,
   Eye,
   Heart,
   MessageCircle,
-  Share,
-  Bookmark,
   Users,
   TrendingUp,
   RefreshCw,
+  LogOut,
+  Link as LinkIcon,
 } from "lucide-react";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
 import { InstagramService } from "@/services/instagram.service";
-// Remove database service import since we're not using database storage
+import { InstagramAuth } from "@/lib/instagram-auth";
+import { InstagramAuthModal } from "@/components/instagram-auth-modal";
+import { toast } from "sonner";
 
 interface InstagramAccountData {
   id: string;
@@ -100,44 +103,178 @@ interface InstagramAnalyticsResponse {
 export function InstagramAnalytics() {
   const [data, setData] = useState<InstagramAnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [, setActiveTab] = useState("overview");
+
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authInfo, setAuthInfo] = useState<{ userId: string } | null>(null);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const instagramService = new InstagramService();
 
   useEffect(() => {
-    fetchAnalytics();
+    checkAuthentication();
   }, []);
 
+  // Listen for storage events to detect auth changes from other components
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'instagram_auth') {
+        console.log('Instagram auth changed, refreshing analytics...');
+        checkAuthentication();
+      }
+    };
+
+    // Listen for custom event from same tab
+    const handleAuthChange = () => {
+      console.log('Instagram auth changed (same tab), refreshing analytics...');
+      checkAuthentication();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('instagram-auth-changed', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('instagram-auth-changed', handleAuthChange);
+    };
+  }, []);
+
+  const checkAuthentication = async () => {
+    try {
+      const authenticated = InstagramAuth.isAuthenticated();
+      setIsAuthenticated(authenticated);
+
+      if (authenticated) {
+        const credentials = InstagramAuth.getCredentials();
+        const info = credentials ? { userId: credentials.userId } : null;
+        setAuthInfo(info);
+        await fetchAnalytics();
+      } else {
+        setLoading(false);
+        setData(null);
+        setInitialLoadComplete(true);
+      }
+    } catch (error) {
+      console.error('Authentication check failed:', error);
+      setLoading(false);
+      setIsAuthenticated(false);
+      setInitialLoadComplete(true);
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    toast.success("Instagram account connected successfully!");
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new Event('instagram-auth-changed'));
+    checkAuthentication();
+  };
+
+  const handleDisconnect = () => {
+    if (confirm("Are you sure you want to disconnect your Instagram account?")) {
+      InstagramAuth.clearCredentials();
+      setIsAuthenticated(false);
+      setAuthInfo(null);
+      setData(null);
+      // Dispatch custom event for same-tab updates
+      window.dispatchEvent(new Event('instagram-auth-changed'));
+      toast.success("Instagram account disconnected");
+    }
+  };
+
   const fetchAnalytics = async () => {
+    // Don't check isAuthenticated here since it might not be set yet
+    // Check credentials directly
+    const credentials = InstagramAuth.getCredentials();
+    if (!credentials) {
+      setLoading(false);
+      setInitialLoadComplete(true);
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('Fetching Instagram analytics...');
       const response = await instagramService.getPageAnalytics();
+      console.log('Instagram analytics response:', response);
 
-      // Transform the response to match our interface
       if (response.success && response.data) {
         setData({
           success: true,
           data: response.data,
         });
+        setInitialLoadComplete(true);
+      } else {
+        // Only show error if this is not the first load
+        // On first load, retry automatically once
+        if (!initialLoadComplete) {
+          console.log('First load failed, retrying...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const retryResponse = await instagramService.getPageAnalytics();
+          
+          if (retryResponse.success && retryResponse.data) {
+            setData({
+              success: true,
+              data: retryResponse.data,
+            });
+          } else {
+            setData({
+              success: false,
+              error:
+                retryResponse.error ||
+                "Failed to load Instagram analytics. Please try again later.",
+            });
+          }
+        } else {
+          setData({
+            success: false,
+            error:
+              response.error ||
+              "Failed to load Instagram analytics. Please try again later.",
+          });
+        }
+        setInitialLoadComplete(true);
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      
+      // Only show error if this is not the first load
+      if (!initialLoadComplete) {
+        console.log('First load error, retrying...');
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const retryResponse = await instagramService.getPageAnalytics();
+          
+          if (retryResponse.success && retryResponse.data) {
+            setData({
+              success: true,
+              data: retryResponse.data,
+            });
+          } else {
+            setData({
+              success: false,
+              error: error instanceof Error ? error.message : "Failed to load Instagram analytics. Please try again later.",
+            });
+          }
+        } catch (retryError) {
+          setData({
+            success: false,
+            error: error instanceof Error ? error.message : "Failed to load Instagram analytics. Please try again later.",
+          });
+        }
       } else {
         setData({
           success: false,
-          error:
-            response.error ||
-            "Failed to load Instagram analytics. Please try again later.",
+          error: error instanceof Error ? error.message : "Failed to load Instagram analytics. Please try again later.",
         });
       }
-    } catch (error) {
-      setData({
-        success: false,
-        error: "Failed to load Instagram analytics. Please try again later.",
-      });
+      setInitialLoadComplete(true);
     } finally {
       setLoading(false);
     }
   };
 
-  // Format metrics for display
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
@@ -167,22 +304,6 @@ export function InstagramAnalytics() {
           </Card>
         ))}
       </div>
-
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-[180px]" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex justify-between">
-                <Skeleton className="h-4 w-[120px]" />
-                <Skeleton className="h-4 w-[80px]" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 
@@ -195,26 +316,65 @@ export function InstagramAnalytics() {
         <p className="text-sm">This could be due to:</p>
         <ul className="text-sm list-disc list-inside ml-4 space-y-1">
           <li>Instagram API service being temporarily down</li>
+          <li>Invalid or expired access token</li>
           <li>Network connectivity issues</li>
-          <li>Server maintenance or high traffic</li>
         </ul>
-        <p className="text-sm font-medium">
-          The service usually recovers automatically within a few minutes.
-        </p>
       </AlertDescription>
       <div className="flex gap-2 mt-4">
         <Button variant="outline" onClick={fetchAnalytics}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Try Again
         </Button>
-        <Button variant="outline" onClick={() => window.location.reload()}>
-          Reload Page
+        <Button variant="outline" onClick={handleDisconnect}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Reconnect Account
         </Button>
       </div>
     </Alert>
   );
 
-  // Render content based on loading and error states
+  // Show authentication required state
+  if (!isAuthenticated) {
+    return (
+      <div className="space-y-6">
+        <InstagramAuthModal
+          open={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={handleAuthSuccess}
+        />
+
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">
+              <LinkIcon className="h-3 w-3 mr-1" />
+              Not Connected
+            </Badge>
+          </div>
+          <Button onClick={() => setShowAuthModal(true)} size="sm">
+            <Instagram className="h-4 w-4 mr-2" />
+            Connect Instagram
+          </Button>
+        </div>
+
+        <Card className="border-blue-200 dark:border-blue-800">
+          <CardContent className="p-8 text-center">
+            <Instagram className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium mb-2">
+              Connect Your Instagram Account
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Connect your Instagram Business Account to view analytics, insights, and engagement metrics.
+            </p>
+            <Button onClick={() => setShowAuthModal(true)}>
+              <Instagram className="h-4 w-4 mr-2" />
+              Connect Now
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) return renderSkeleton();
   if (!data?.success) return renderError();
 
@@ -224,7 +384,35 @@ export function InstagramAnalytics() {
 
   return (
     <div className="space-y-6">
-      {/* Account Overview */}
+      <InstagramAuthModal
+        open={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="default">
+            <Instagram className="h-3 w-3 mr-1" />
+            Connected
+          </Badge>
+          {authInfo && (
+            <Badge variant="outline" className="text-xs">
+              User ID: {authInfo.userId}
+            </Badge>
+          )}
+        </div>
+        <Button
+          onClick={handleDisconnect}
+          variant="outline"
+          size="sm"
+          className="text-red-600 hover:text-red-700"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Disconnect
+        </Button>
+      </div>
+
       {accountData && (
         <Card>
           <CardHeader className="pb-2">
@@ -248,7 +436,7 @@ export function InstagramAnalytics() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-4 text-sm flex-wrap">
               <div className="flex items-center">
                 <Users className="mr-1 h-4 w-4 text-muted-foreground" />
                 <span>
@@ -262,7 +450,9 @@ export function InstagramAnalytics() {
               {accountData.website && (
                 <div className="flex items-center">
                   <span className="text-muted-foreground">🌐</span>
-                  <span className="ml-1">{accountData.website}</span>
+                  <span className="ml-1 truncate max-w-[150px]">
+                    {accountData.website}
+                  </span>
                 </div>
               )}
             </div>
@@ -270,18 +460,16 @@ export function InstagramAnalytics() {
         </Card>
       )}
 
-      {/* Tabs for different analytics views */}
       <Tabs
         defaultValue="overview"
         className="w-full"
         onValueChange={setActiveTab}
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="engagement">Engagement</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
           {analytics && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
@@ -365,7 +553,6 @@ export function InstagramAnalytics() {
             </div>
           )}
 
-          {/* Recent Posts Summary */}
           {data.data?.recent_media?.data && (
             <Card>
               <CardHeader>
@@ -384,8 +571,8 @@ export function InstagramAnalytics() {
                       const engagementRate =
                         post.like_count > 0
                           ? ((post.like_count + post.comments_count) /
-                              post.like_count) *
-                            100
+                            post.like_count) *
+                          100
                           : 0;
 
                       return (
@@ -449,9 +636,6 @@ export function InstagramAnalytics() {
           )}
         </TabsContent>
 
-        {/* Performance Tab */}
-
-        {/* Engagement Tab */}
         <TabsContent value="engagement">
           <Card className="mt-4">
             <CardHeader>
@@ -508,8 +692,6 @@ export function InstagramAnalytics() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* Insights Tab */}
       </Tabs>
     </div>
   );
