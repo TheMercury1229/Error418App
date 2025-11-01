@@ -27,8 +27,8 @@ export function InstagramAuthModal({
   onClose,
   onSuccess,
 }: InstagramAuthModalProps) {
-  const [accessToken, setAccessToken] = useState("");
-  const [userId, setUserId] = useState("");
+  const [accessToken, setAccessToken] = useState("EAALNqJXydU4BPnBHgTZBSEtsSZCgDwtfxAtdbIcQrPx6sVU6pI6O9x9nKfhNZCp2ZA292FHk22VTceS2o3lHHE0s3ULPIZALkrGbbLjmbVKHLNFnlt2KV6EgkpEJdBhm4NJdVhKZCkZAoBVCcR7huUCRXvZCVg0cfSLxLGB0HtkfiWeNUIERBoKrXGVUajjWQoLj");
+  const [userId, setUserId] = useState("17841477241642522");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -90,21 +90,19 @@ export function InstagramAuthModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Info Alert */}
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              You need an Instagram Business Account and access token from Meta Developer Portal.
-              Visit{" "}
+          {/* Demo Credentials Info */}
+          <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-xs text-blue-900 dark:text-blue-100">
+              <strong>Demo credentials pre-filled!</strong> You can test the integration with the provided demo account or replace with your own credentials from{" "}
               <a
                 href="https://developers.facebook.com/docs/instagram-api"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline"
+                className="underline font-medium"
               >
-                Instagram API Documentation
-              </a>{" "}
-              to get your credentials.
+                Meta Developer Portal
+              </a>.
             </AlertDescription>
           </Alert>
 

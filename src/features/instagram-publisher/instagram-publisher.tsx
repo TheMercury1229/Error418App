@@ -29,6 +29,7 @@ import { instagramDbService } from "@/services/instagram-db.service";
 import { aiImageHelperService } from "@/services/ai-image-helper.service";
 import { InstagramAuth } from "@/lib/instagram-auth";
 import { InstagramAuthModal } from "@/components/instagram-auth-modal";
+import { InstagramDisconnectDialog } from "@/components/instagram-disconnect-dialog";
 import { toast } from "sonner";
 
 interface InstagramPublisherProps {
@@ -61,6 +62,7 @@ export function InstagramPublisher({
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
   const [authInfo, setAuthInfo] = useState<{ userId: string } | null>(null);
 
   // AI Helper state
@@ -139,16 +141,19 @@ export function InstagramPublisher({
     checkAuthentication();
   };
 
-  const handleDisconnect = () => {
-    if (confirm("Are you sure you want to disconnect your Instagram account?")) {
-      InstagramAuth.clearCredentials();
-      setIsAuthenticated(false);
-      setAuthInfo(null);
-      setApiStatus("unauthenticated");
-      // Dispatch custom event for same-tab updates
-      window.dispatchEvent(new Event('instagram-auth-changed'));
-      toast.success("Instagram account disconnected");
-    }
+  const handleDisconnectClick = () => {
+    setShowDisconnectDialog(true);
+  };
+
+  const handleDisconnectConfirm = () => {
+    InstagramAuth.clearCredentials();
+    setIsAuthenticated(false);
+    setAuthInfo(null);
+    setApiStatus("unauthenticated");
+    setShowDisconnectDialog(false);
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new Event('instagram-auth-changed'));
+    toast.success("Instagram account disconnected successfully");
   };
 
   const handlePublish = async () => {
@@ -386,6 +391,11 @@ export function InstagramPublisher({
         onClose={() => setShowAuthModal(false)}
         onSuccess={handleAuthSuccess}
       />
+      <InstagramDisconnectDialog
+        open={showDisconnectDialog}
+        onClose={() => setShowDisconnectDialog(false)}
+        onConfirm={handleDisconnectConfirm}
+      />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-2">
@@ -424,7 +434,7 @@ export function InstagramPublisher({
             </Button>
           ) : (
             <Button
-              onClick={handleDisconnect}
+              onClick={handleDisconnectClick}
               variant="outline"
               size="sm"
               className="text-red-600 hover:text-red-700"

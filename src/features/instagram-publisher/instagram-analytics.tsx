@@ -31,6 +31,7 @@ import { Progress } from "@/components/ui/progress";
 import { InstagramService } from "@/services/instagram.service";
 import { InstagramAuth } from "@/lib/instagram-auth";
 import { InstagramAuthModal } from "@/components/instagram-auth-modal";
+import { InstagramDisconnectDialog } from "@/components/instagram-disconnect-dialog";
 import { toast } from "sonner";
 
 interface InstagramAccountData {
@@ -108,6 +109,7 @@ export function InstagramAnalytics() {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
   const [authInfo, setAuthInfo] = useState<{ userId: string } | null>(null);
 
   const instagramService = new InstagramService();
@@ -161,16 +163,19 @@ export function InstagramAnalytics() {
     checkAuthentication();
   };
 
-  const handleDisconnect = () => {
-    if (confirm("Are you sure you want to disconnect your Instagram account?")) {
-      InstagramAuth.clearCredentials();
-      setIsAuthenticated(false);
-      setAuthInfo(null);
-      setData(null);
-      // Dispatch custom event for same-tab updates
-      window.dispatchEvent(new Event('instagram-auth-changed'));
-      toast.success("Instagram account disconnected");
-    }
+  const handleDisconnectClick = () => {
+    setShowDisconnectDialog(true);
+  };
+
+  const handleDisconnectConfirm = () => {
+    InstagramAuth.clearCredentials();
+    setIsAuthenticated(false);
+    setAuthInfo(null);
+    setData(null);
+    setShowDisconnectDialog(false);
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new Event('instagram-auth-changed'));
+    toast.success("Instagram account disconnected successfully");
   };
 
   const fetchAnalytics = async () => {
@@ -259,7 +264,7 @@ export function InstagramAnalytics() {
           <RefreshCw className="h-4 w-4 mr-2" />
           Try Again
         </Button>
-        <Button variant="outline" onClick={handleDisconnect}>
+        <Button variant="outline" onClick={handleDisconnectClick}>
           <LogOut className="h-4 w-4 mr-2" />
           Reconnect Account
         </Button>
@@ -275,6 +280,11 @@ export function InstagramAnalytics() {
           open={showAuthModal}
           onClose={() => setShowAuthModal(false)}
           onSuccess={handleAuthSuccess}
+        />
+        <InstagramDisconnectDialog
+          open={showDisconnectDialog}
+          onClose={() => setShowDisconnectDialog(false)}
+          onConfirm={handleDisconnectConfirm}
         />
 
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -323,6 +333,11 @@ export function InstagramAnalytics() {
         onClose={() => setShowAuthModal(false)}
         onSuccess={handleAuthSuccess}
       />
+      <InstagramDisconnectDialog
+        open={showDisconnectDialog}
+        onClose={() => setShowDisconnectDialog(false)}
+        onConfirm={handleDisconnectConfirm}
+      />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-2">
@@ -337,7 +352,7 @@ export function InstagramAnalytics() {
           )}
         </div>
         <Button
-          onClick={handleDisconnect}
+          onClick={handleDisconnectClick}
           variant="outline"
           size="sm"
           className="text-red-600 hover:text-red-700"
