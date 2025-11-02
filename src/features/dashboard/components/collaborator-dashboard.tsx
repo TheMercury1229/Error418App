@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -14,13 +16,73 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Users, Mail, Globe, RefreshCw, UserPlus } from "lucide-react";
+import {
+  Users,
+  Mail,
+  Globe,
+  RefreshCw,
+  UserPlus,
+  Settings,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { useCollaborators } from "@/hooks/use-collaborators";
+import { toast } from "sonner";
 
 export default function CollaboratorDashboard() {
   const [rangePercent, setRangePercent] = useState(20);
+  const [isDiscoverable, setIsDiscoverable] = useState(false);
+  const [discoverableLoading, setDiscoverableLoading] = useState(false);
   const { collaborators, mySubscribers, searchRange, loading, error, refetch } =
     useCollaborators(rangePercent);
+
+  // Load discoverable state on component mount
+  useEffect(() => {
+    const fetchDiscoverableStatus = async () => {
+      try {
+        const response = await fetch("/api/profile");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.profile) {
+            setIsDiscoverable(data.profile.discoverable || false);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching discoverable status:", error);
+      }
+    };
+
+    fetchDiscoverableStatus();
+  }, []);
+
+  const handleDiscoverableToggle = async (checked: boolean) => {
+    setDiscoverableLoading(true);
+    try {
+      const response = await fetch("/api/profile/discoverable", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ discoverable: checked }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update discoverable status");
+      }
+
+      setIsDiscoverable(checked);
+      toast.success(
+        checked
+          ? "You are now discoverable by other creators"
+          : "You are no longer discoverable by other creators"
+      );
+    } catch (error) {
+      toast.error("Failed to update discoverable status");
+      console.error("Error updating discoverable status:", error);
+    } finally {
+      setDiscoverableLoading(false);
+    }
+  };
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -116,6 +178,50 @@ export default function CollaboratorDashboard() {
           ) : loading ? (
             <Skeleton className="h-20 w-full" />
           ) : null}
+        </CardContent>
+      </Card>
+
+      {/* Discoverability Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Collaboration Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center gap-3">
+              {isDiscoverable ? (
+                <Eye className="h-5 w-5 text-green-600" />
+              ) : (
+                <EyeOff className="h-5 w-5 text-muted-foreground" />
+              )}
+              <div>
+                <Label htmlFor="discoverable" className="text-base font-medium">
+                  Make my profile discoverable
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow other creators with similar subscriber counts to find
+                  you for collaborations
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="discoverable"
+              checked={isDiscoverable}
+              onCheckedChange={handleDiscoverableToggle}
+              disabled={discoverableLoading}
+            />
+          </div>
+          {isDiscoverable && (
+            <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-sm text-green-700 dark:text-green-300">
+                ✓ Your profile is visible to other creators looking for
+                collaborators
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

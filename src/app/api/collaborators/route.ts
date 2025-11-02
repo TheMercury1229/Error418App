@@ -27,81 +27,156 @@ export async function GET(req: NextRequest) {
     const rangePercent = parseInt(url.searchParams.get("range") || "20");
     const limit = parseInt(url.searchParams.get("limit") || "10");
 
-    // For now, return mock collaborators for demonstration
-    // TODO: Replace with real data once users have YouTube analytics synced
+    // Get current user's profile and subscriber count
+    const currentUser = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: { creatorProfile: true },
+    });
 
-    // Use a base subscriber count for demo purposes
-    const mySubscribers = 25000; // Demo value
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Get current user's subscriber count from YouTube Analytics
+    const userAnalytics = await prisma.youTubeAnalytics.findFirst({
+      where: { clerkId: userId },
+      orderBy: { date: "desc" },
+      select: { subscribersGained: true },
+    });
+
+    // Use actual subscriber count or default to 0 if no analytics data
+    const mySubscribers = userAnalytics?.subscribersGained || 0;
+
+    // If user has no subscriber data, we can't calculate meaningful ranges
+    if (mySubscribers === 0) {
+      return NextResponse.json({
+        success: true,
+        mySubscribers: 0,
+        searchRange: null,
+        collaborators: [],
+        message:
+          "Connect your YouTube account to find collaborators with similar audience sizes",
+      });
+    }
+
     const lowerBound = Math.floor(mySubscribers * (1 - rangePercent / 100));
     const upperBound = Math.ceil(mySubscribers * (1 + rangePercent / 100));
 
-    // Mock collaborators for demonstration (replace with real DB query later)
-    const mockCollaborators = [
-      {
-        clerkId: "demo_user_1",
-        displayName: "Sarah Chen",
-        bio: "Tech reviewer and lifestyle content creator focusing on productivity tools and home office setups.",
-        email: "sarah.chen.creator@email.com",
-        website: "https://sarahchen.tech",
-        primaryPlatforms: ["YouTube", "Instagram", "TikTok"],
-        contentGenres: ["Technology", "Lifestyle", "Productivity"],
-        targetAudience: "Young professionals",
-        subscribersTotal: 28500,
-        lastActive: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    // Fetch discoverable users from the database
+    const potentialCollaborators = await prisma.creatorProfile.findMany({
+      where: {
+        discoverable: true,
+        clerkId: {
+          not: userId, // Exclude current user
+        },
       },
-      {
-        clerkId: "demo_user_2",
-        displayName: "Mike Rodriguez",
-        bio: "Food enthusiast creating quick recipes for busy people. Specializing in 15-minute meals and meal prep.",
-        email: "mike.food.creator@email.com",
-        website: "https://quickbites.com",
-        primaryPlatforms: ["YouTube", "Instagram"],
-        contentGenres: ["Food", "Cooking", "Lifestyle"],
-        targetAudience: "Working adults",
-        subscribersTotal: 22800,
-        lastActive: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+      include: {
+        user: {
+          include: {
+            youtubeAnalytics: {
+              orderBy: { date: "desc" },
+              take: 1,
+            },
+          },
+        },
       },
-      {
-        clerkId: "demo_user_3",
-        displayName: "Emma Johnson",
-        bio: "Fitness coach and wellness advocate. Helping people build sustainable healthy habits from home.",
-        email: "emma.wellness@email.com",
-        website: "https://emmawellness.fit",
-        primaryPlatforms: ["YouTube", "Instagram", "Facebook"],
-        contentGenres: ["Fitness", "Health", "Wellness"],
-        targetAudience: "Health-conscious individuals",
-        subscribersTotal: 26200,
-        lastActive: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-      },
-    ];
+      take: limit * 3, // Fetch more to have better filtering options
+    });
 
-    // Calculate similarity scores and format response
-    const collaborators: CollaboratorMatch[] = mockCollaborators.map(
-      (collab: any) => {
-        const subscriberDiff = Math.abs(
-          collab.subscribersTotal - mySubscribers
-        );
-        const maxDiff = Math.max(mySubscribers, collab.subscribersTotal);
+    // Helper function to calculate content similarity
+    const calculateContentSimilarity = (
+      userGenres: string[],
+      collaboratorGenres: string[]
+    ) => {
+      if (!userGenres.length || !collaboratorGenres.length) return 0;
+      const intersection = userGenres.filter((genre) =>
+        collaboratorGenres.includes(genre)
+      );
+      const union = [...new Set([...userGenres, ...collaboratorGenres])];
+      return intersection.length / union.length;
+    };
+
+    // Helper function to calculate platform similarity
+    const calculatePlatformSimilarity = (
+      userPlatforms: string[],
+      collaboratorPlatforms: string[]
+    ) => {
+      if (!userPlatforms.length || !collaboratorPlatforms.length) return 0;
+      const intersection = userPlatforms.filter((platform) =>
+        collaboratorPlatforms.includes(platform)
+      );
+      return (
+        intersection.length /
+        Math.max(userPlatforms.length, collaboratorPlatforms.length)
+      );
+    };
+
+    // Process real collaborators from database with enhanced matching
+    const validCollaborators = potentialCollaborators.filter((profile) => {
+      // Get actual subscriber count from their YouTube analytics
+      const collaboratorAnalytics = profile.user.youtubeAnalytics[0];
+      const subscribersTotal = collaboratorAnalytics?.subscribersGained || 0;
+
+      // Only include collaborators with subscriber data within range
+      return (
+        subscribersTotal > 0 &&
+        subscribersTotal >= lowerBound &&
+        subscribersTotal <= upperBound
+      );
+    });
+
+    const collaborators: CollaboratorMatch[] = validCollaborators
+      .map((profile) => {
+        const collaboratorAnalytics = profile.user.youtubeAnalytics[0];
+        const subscribersTotal = collaboratorAnalytics!.subscribersGained; // We know this exists from filter above
+
+        // Calculate subscriber similarity (40% weight)
+        const subscriberDiff = Math.abs(subscribersTotal - mySubscribers);
+        const maxDiff = Math.max(mySubscribers, subscribersTotal);
+        const subscriberSimilarity =
+          maxDiff > 0 ? Math.max(0, 1 - subscriberDiff / maxDiff) : 1;
+
+        // Calculate content similarity (35% weight)
+        const contentSimilarity = currentUser.creatorProfile
+          ? calculateContentSimilarity(
+              currentUser.creatorProfile.contentGenres,
+              profile.contentGenres
+            )
+          : 0;
+
+        // Calculate platform similarity (25% weight)
+        const platformSimilarity = currentUser.creatorProfile
+          ? calculatePlatformSimilarity(
+              currentUser.creatorProfile.primaryPlatforms,
+              profile.primaryPlatforms
+            )
+          : 0;
+
+        // Calculate composite similarity score
         const similarity =
-          maxDiff > 0
-            ? Math.max(0, 100 - (subscriberDiff / maxDiff) * 100)
-            : 100;
+          (subscriberSimilarity * 0.4 +
+            contentSimilarity * 0.35 +
+            platformSimilarity * 0.25) *
+          100;
 
         return {
-          clerkId: collab.clerkId,
-          displayName: collab.displayName,
-          bio: collab.bio,
-          email: collab.email,
-          website: collab.website,
-          primaryPlatforms: collab.primaryPlatforms || [],
-          contentGenres: collab.contentGenres || [],
-          targetAudience: collab.targetAudience,
-          subscribersTotal: collab.subscribersTotal,
+          clerkId: profile.clerkId,
+          displayName: profile.displayName || "Anonymous Creator",
+          bio:
+            profile.bio ||
+            "Content creator passionate about sharing knowledge and connecting with others.",
+          email: profile.email,
+          website: profile.website,
+          primaryPlatforms: profile.primaryPlatforms || [],
+          contentGenres: profile.contentGenres || [],
+          targetAudience: profile.targetAudience,
+          subscribersTotal,
           similarity: Math.round(similarity * 100) / 100,
-          lastActive: collab.lastActive,
+          lastActive: profile.updatedAt,
         };
-      }
-    );
+      })
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, limit);
 
     return NextResponse.json({
       success: true,
