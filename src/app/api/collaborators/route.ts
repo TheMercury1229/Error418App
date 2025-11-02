@@ -47,22 +47,11 @@ export async function GET(req: NextRequest) {
     // Use actual subscriber count or default to 0 if no analytics data
     const mySubscribers = userAnalytics?.subscribersGained || 0;
 
-    // If user has no subscriber data, we can't calculate meaningful ranges
-    if (mySubscribers === 0) {
-      return NextResponse.json({
-        success: true,
-        mySubscribers: 0,
-        searchRange: null,
-        collaborators: [],
-        message:
-          "Connect your YouTube account to find collaborators with similar audience sizes",
-      });
-    }
-
+    // Calculate range based on subscriber count
     const lowerBound = Math.floor(mySubscribers * (1 - rangePercent / 100));
     const upperBound = Math.ceil(mySubscribers * (1 + rangePercent / 100));
 
-    // Fetch discoverable users from the database
+    // Fetch all discoverable users from the database
     const potentialCollaborators = await prisma.creatorProfile.findMany({
       where: {
         discoverable: true,
@@ -111,28 +100,17 @@ export async function GET(req: NextRequest) {
       );
     };
 
-    // Process real collaborators from database with enhanced matching
-    const validCollaborators = potentialCollaborators.filter((profile) => {
-      // Get actual subscriber count from their YouTube analytics
-      const collaboratorAnalytics = profile.user.youtubeAnalytics[0];
-      const subscribersTotal = collaboratorAnalytics?.subscribersGained || 0;
-
-      // Only include collaborators with subscriber data within range
-      return (
-        subscribersTotal > 0 &&
-        subscribersTotal >= lowerBound &&
-        subscribersTotal <= upperBound
-      );
-    });
-
-    const collaborators: CollaboratorMatch[] = validCollaborators
+    // Process collaborators and calculate similarity
+    const processedCollaborators: CollaboratorMatch[] = potentialCollaborators
       .map((profile) => {
+        // Get actual subscriber count from their YouTube analytics
         const collaboratorAnalytics = profile.user.youtubeAnalytics[0];
-        const subscribersTotal = collaboratorAnalytics!.subscribersGained; // We know this exists from filter above
+        const subscribersTotal =
+          collaboratorAnalytics?.subscribersGained || 1000;
 
         // Calculate subscriber similarity (40% weight)
         const subscriberDiff = Math.abs(subscribersTotal - mySubscribers);
-        const maxDiff = Math.max(mySubscribers, subscribersTotal);
+        const maxDiff = Math.max(mySubscribers, subscribersTotal, 1);
         const subscriberSimilarity =
           maxDiff > 0 ? Math.max(0, 1 - subscriberDiff / maxDiff) : 1;
 
@@ -175,8 +153,25 @@ export async function GET(req: NextRequest) {
           lastActive: profile.updatedAt,
         };
       })
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, limit);
+      .sort((a, b) => b.similarity - a.similarity);
+
+    // First, try to find collaborators within subscriber range if user has subscriber data
+    let collaborators: CollaboratorMatch[] = [];
+
+    if (mySubscribers > 0) {
+      collaborators = processedCollaborators
+        .filter(
+          (collab) =>
+            collab.subscribersTotal >= lowerBound &&
+            collab.subscribersTotal <= upperBound
+        )
+        .slice(0, limit);
+    }
+
+    // If no collaborators found in range, return all discoverable collaborators
+    if (collaborators.length === 0) {
+      collaborators = processedCollaborators.slice(0, limit);
+    }
 
     return NextResponse.json({
       success: true,
