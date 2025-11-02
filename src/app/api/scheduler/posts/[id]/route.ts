@@ -1,31 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { auth } from '@clerk/nextjs/server';
+import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import { auth } from "@clerk/nextjs/server";
 
 const prisma = new PrismaClient();
 
 // GET - Fetch specific scheduled post
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
+
     const { userId } = await auth();
-    
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const scheduledPost = await prisma.scheduledPost.findFirst({
       where: {
-        id: params.id,
+        id,
         clerkId: userId,
       },
     });
 
     if (!scheduledPost) {
       return NextResponse.json(
-        { error: 'Scheduled post not found' },
+        { error: "Scheduled post not found" },
         { status: 404 }
       );
     }
@@ -34,11 +33,10 @@ export async function GET(
       success: true,
       post: scheduledPost,
     });
-
   } catch (error) {
-    console.error('Fetch scheduled post error:', error);
+    console.error("Fetch scheduled post error:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch scheduled post' },
+      { error: "Failed to fetch scheduled post" },
       { status: 500 }
     );
   } finally {
@@ -53,9 +51,9 @@ export async function PUT(
 ) {
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -66,7 +64,7 @@ export async function PUT(
       platform,
       scheduledAt,
       hashtags,
-      status
+      status,
     } = body;
 
     // Check if post exists and belongs to user
@@ -79,15 +77,15 @@ export async function PUT(
 
     if (!existingPost) {
       return NextResponse.json(
-        { error: 'Scheduled post not found' },
+        { error: "Scheduled post not found" },
         { status: 404 }
       );
     }
 
     // Don't allow updating published posts
-    if (existingPost.status === 'published') {
+    if (existingPost.status === "published") {
       return NextResponse.json(
-        { error: 'Cannot update published posts' },
+        { error: "Cannot update published posts" },
         { status: 400 }
       );
     }
@@ -99,12 +97,12 @@ export async function PUT(
     if (platform !== undefined) updateData.platform = platform;
     if (hashtags !== undefined) updateData.hashtags = hashtags;
     if (status !== undefined) updateData.status = status;
-    
+
     if (scheduledAt !== undefined) {
       const scheduledDate = new Date(scheduledAt);
       if (scheduledDate <= new Date()) {
         return NextResponse.json(
-          { error: 'Scheduled date must be in the future' },
+          { error: "Scheduled date must be in the future" },
           { status: 400 }
         );
       }
@@ -120,11 +118,10 @@ export async function PUT(
       success: true,
       post: updatedPost,
     });
-
   } catch (error) {
-    console.error('Update scheduled post error:', error);
+    console.error("Update scheduled post error:", error);
     return NextResponse.json(
-      { error: 'Failed to update scheduled post' },
+      { error: "Failed to update scheduled post" },
       { status: 500 }
     );
   } finally {
@@ -139,9 +136,9 @@ export async function DELETE(
 ) {
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if post exists and belongs to user
@@ -154,7 +151,7 @@ export async function DELETE(
 
     if (!existingPost) {
       return NextResponse.json(
-        { error: 'Scheduled post not found' },
+        { error: "Scheduled post not found" },
         { status: 404 }
       );
     }
@@ -165,13 +162,12 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Scheduled post deleted successfully',
+      message: "Scheduled post deleted successfully",
     });
-
   } catch (error) {
-    console.error('Delete scheduled post error:', error);
+    console.error("Delete scheduled post error:", error);
     return NextResponse.json(
-      { error: 'Failed to delete scheduled post' },
+      { error: "Failed to delete scheduled post" },
       { status: 500 }
     );
   } finally {
