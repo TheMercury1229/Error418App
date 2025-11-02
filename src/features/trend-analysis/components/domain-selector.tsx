@@ -1,3 +1,4 @@
+// domain-selector.tsx
 "use client";
 
 import React from "react";
@@ -23,18 +24,18 @@ import { Search } from "lucide-react";
 interface DomainSelectorProps {
   selectedDomain: Domain | null;
   selectedRegion: Region;
-  onDomainChange: (domain: Domain) => void;
-  onRegionChange: (region: Region) => void;
-  onAnalyze: () => void;
+  onDomainChangeAction: (domain: Domain) => void;
+  onRegionChangeAction: (region: Region) => void;
+  onAnalyzeAction: () => void;
   isLoading: boolean;
 }
 
 export function DomainSelector({
   selectedDomain,
   selectedRegion,
-  onDomainChange,
-  onRegionChange,
-  onAnalyze,
+  onDomainChangeAction,
+  onRegionChangeAction,
+  onAnalyzeAction,
   isLoading,
 }: DomainSelectorProps) {
   return (
@@ -49,7 +50,7 @@ export function DomainSelector({
         {/* Region Selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Region</label>
-          <Select value={selectedRegion} onValueChange={onRegionChange}>
+          <Select value={selectedRegion} onValueChange={onRegionChangeAction}>
             <SelectTrigger>
               <SelectValue placeholder="Select a region" />
             </SelectTrigger>
@@ -77,8 +78,8 @@ export function DomainSelector({
                   <Badge
                     key={domain}
                     variant={selectedDomain === domain ? "default" : "outline"}
-                    className="cursor-pointer hover:bg-accent"
-                    onClick={() => onDomainChange(domain)}
+                    className="cursor-pointer hover:bg-accent transition-colors"
+                    onClick={() => onDomainChangeAction(domain)}
                   >
                     {DOMAIN_LABELS[domain]}
                   </Badge>
@@ -90,7 +91,7 @@ export function DomainSelector({
 
         {/* Analyze Button */}
         <Button
-          onClick={onAnalyze}
+          onClick={onAnalyzeAction}
           disabled={!selectedDomain || isLoading}
           className="w-full"
           size="lg"

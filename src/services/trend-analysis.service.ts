@@ -1,3 +1,4 @@
+
 /**
  * Trend Analysis Service
  * Provides insights into trending topics for various creative domains
@@ -26,7 +27,7 @@ export type Domain =
   | "pop_music"
   | "indie_music";
 
-export type Region = "IN" | "global";
+export type Region = "IN" | "GLOBAL";
 
 export interface TrendAnalysisRequest {
   domain: Domain;
@@ -37,18 +38,25 @@ export interface TopVideo {
   videoId: string;
   title: string;
   channel: string;
-  publishedAt: string;
-  views: number;
   url: string;
+  views: number;
+  likes: number;
+  subscribers: number;
+  publishedAt: string;
+  india_relevance_percent: number | null;
 }
 
 export interface TrendTopic {
   rank: number;
   topic: string;
   description: string;
-  trend_score: number;
-  view_score: number;
-  composite_score: number;
+  trend_score_percent: number;
+  view_score_percent: number;
+  india_relevance_percent: number | null;
+  subscriber_score_percent: number;
+  composite_score_percent: number;
+  google_trends_percent: number | null;
+  video_count: number;
   top_video: TopVideo;
 }
 
@@ -57,6 +65,14 @@ export interface TrendAnalysisResponse {
   region: Region;
   generated_at: string;
   top_topics: TrendTopic[];
+  trending_hashtags: string[];
+  metadata: {
+    total_candidates_analyzed: number;
+    results_returned: number;
+    hashtags_count: number;
+    data_sources: string[];
+    timeframe: string;
+  };
 }
 
 export interface TrendApiError {
@@ -107,19 +123,19 @@ export async function fetchTrendAnalysis(
  * Domain display names for UI
  */
 export const DOMAIN_LABELS: Record<Domain, string> = {
-  handloom: "Handloom",
-  dancing: "Dancing",
-  singing: "Singing",
+  handloom: "Handloom & Textiles",
+  dancing: "Dance",
+  singing: "Singing & Vocals",
   painting: "Painting",
   pottery: "Pottery",
   embroidery: "Embroidery",
   woodwork: "Woodwork",
-  jewellery: "Jewellery",
+  jewellery: "Jewellery Making",
   metalwork: "Metalwork",
   leatherwork: "Leatherwork",
-  stonecraft: "Stonecraft",
+  stonecraft: "Stone Craft",
   weaving: "Weaving",
-  puppet_art: "Puppet Art",
+  puppet_art: "Puppetry",
   calligraphy: "Calligraphy",
   ceramics: "Ceramics",
   paper_craft: "Paper Craft",
@@ -135,7 +151,7 @@ export const DOMAIN_LABELS: Record<Domain, string> = {
  */
 export const REGION_LABELS: Record<Region, string> = {
   IN: "India",
-  global: "Global",
+  GLOBAL: "Global",
 };
 
 /**
@@ -155,11 +171,10 @@ export const DOMAIN_CATEGORIES = {
     "ceramics",
     "paper_craft",
   ] as Domain[],
-  "Performing Arts": ["dancing", "singing", "puppet_art"] as Domain[],
+  "Performing Arts": ["dancing", "singing", "puppet_art", "folk_music"] as Domain[],
   "Visual Arts": ["painting", "calligraphy"] as Domain[],
-  Music: [
+  "Music & Entertainment": [
     "music",
-    "folk_music",
     "movie_songs",
     "pop_music",
     "indie_music",
@@ -170,6 +185,9 @@ export const DOMAIN_CATEGORIES = {
  * Format view count for display
  */
 export function formatViewCount(views: number): string {
+  if (views >= 1_000_000_000) {
+    return `${(views / 1_000_000_000).toFixed(1)}B`;
+  }
   if (views >= 1_000_000) {
     return `${(views / 1_000_000).toFixed(1)}M`;
   }
@@ -180,8 +198,13 @@ export function formatViewCount(views: number): string {
 }
 
 /**
- * Format trend score as percentage
+ * Format trend score as percentage (for backward compatibility)
  */
 export function formatScore(score: number): string {
+  // If score is already a percentage (0-100), use as is
+  if (score >= 1) {
+    return `${Math.round(score)}%`;
+  }
+  // If score is a decimal (0-1), convert to percentage
   return `${Math.round(score * 100)}%`;
 }
