@@ -12,6 +12,7 @@ import {
   Users,
   FolderOpen,
   BarChart3,
+  TrendingUp,
 } from "lucide-react";
 
 export const navigation = [
@@ -59,6 +60,11 @@ export const navigation = [
     name: "Analytics",
     href: "/analytics",
     icon: BarChart3,
+  },
+  {
+    name: "Trends",
+    href: "/trends",
+    icon: TrendingUp,
   },
   {
     name: "Collaborators",
