@@ -101,7 +101,13 @@ interface InstagramAnalyticsResponse {
   error?: string;
 }
 
-export function InstagramAnalytics() {
+export function InstagramAnalytics({
+  mediaId,
+  clerkId,
+}: {
+  mediaId?: string;
+  clerkId?: string;
+}) {
   const [data, setData] = useState<InstagramAnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [, setActiveTab] = useState("overview");
@@ -121,24 +127,24 @@ export function InstagramAnalytics() {
   // Listen for storage events to detect auth changes from other components
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'instagram_auth') {
-        console.log('Instagram auth changed, refreshing analytics...');
+      if (e.key === "instagram_auth") {
+        console.log("Instagram auth changed, refreshing analytics...");
         checkAuthentication();
       }
     };
 
     // Listen for custom event from same tab
     const handleAuthChange = () => {
-      console.log('Instagram auth changed (same tab), refreshing analytics...');
+      console.log("Instagram auth changed (same tab), refreshing analytics...");
       checkAuthentication();
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('instagram-auth-changed', handleAuthChange);
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("instagram-auth-changed", handleAuthChange);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('instagram-auth-changed', handleAuthChange);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("instagram-auth-changed", handleAuthChange);
     };
   }, []);
 
@@ -159,7 +165,7 @@ export function InstagramAnalytics() {
   const handleAuthSuccess = () => {
     toast.success("Instagram account connected successfully!");
     // Dispatch custom event for same-tab updates
-    window.dispatchEvent(new Event('instagram-auth-changed'));
+    window.dispatchEvent(new Event("instagram-auth-changed"));
     checkAuthentication();
   };
 
@@ -174,7 +180,7 @@ export function InstagramAnalytics() {
     setData(null);
     setShowDisconnectDialog(false);
     // Dispatch custom event for same-tab updates
-    window.dispatchEvent(new Event('instagram-auth-changed'));
+    window.dispatchEvent(new Event("instagram-auth-changed"));
     toast.success("Instagram account disconnected successfully");
   };
 
@@ -186,9 +192,9 @@ export function InstagramAnalytics() {
 
     try {
       setLoading(true);
-      console.log('Fetching Instagram analytics...');
+      console.log("Fetching Instagram analytics...");
       const response = await instagramService.getPageAnalytics();
-      console.log('Instagram analytics response:', response);
+      console.log("Instagram analytics response:", response);
 
       if (response.success && response.data) {
         setData({
@@ -204,10 +210,13 @@ export function InstagramAnalytics() {
         });
       }
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      console.error("Error fetching analytics:", error);
       setData({
         success: false,
-        error: error instanceof Error ? error.message : "Failed to load Instagram analytics. Please try again later.",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to load Instagram analytics. Please try again later.",
       });
     } finally {
       setLoading(false);
@@ -307,7 +316,8 @@ export function InstagramAnalytics() {
               Connect Your Instagram Account
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Connect your Instagram Business Account to view analytics, insights, and engagement metrics.
+              Connect your Instagram Business Account to view analytics,
+              insights, and engagement metrics.
             </p>
             <Button onClick={() => setShowAuthModal(true)}>
               <Instagram className="h-4 w-4 mr-2" />
@@ -520,8 +530,8 @@ export function InstagramAnalytics() {
                       const engagementRate =
                         post.like_count > 0
                           ? ((post.like_count + post.comments_count) /
-                            post.like_count) *
-                          100
+                              post.like_count) *
+                            100
                           : 0;
 
                       return (

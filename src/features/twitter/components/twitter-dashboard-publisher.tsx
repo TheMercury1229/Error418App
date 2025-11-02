@@ -1,19 +1,25 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Twitter, 
-  Loader2, 
+import {
+  Twitter,
+  Loader2,
   CheckCircle,
   ExternalLink,
   AlertCircle,
   Image as ImageIcon,
   X,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import { TwitterAuth } from "./twitter-auth";
 import { toast } from "sonner";
@@ -32,13 +38,15 @@ interface PublishResult {
   url: string;
 }
 
-export function TwitterDashboardPublisher() {
+export function TwitterDashboardPublisher({}) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<TwitterUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [text, setText] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
-  const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
+  const [publishResult, setPublishResult] = useState<PublishResult | null>(
+    null
+  );
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
@@ -53,7 +61,7 @@ export function TwitterDashboardPublisher() {
   const checkAuthStatus = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/twitter/check-auth');
+      const response = await fetch("/api/twitter/check-auth");
       const data = await response.json();
 
       if (data.authenticated && data.user) {
@@ -64,7 +72,7 @@ export function TwitterDashboardPublisher() {
         setUser(null);
       }
     } catch (error) {
-      console.error('Failed to check Twitter auth status:', error);
+      console.error("Failed to check Twitter auth status:", error);
       setIsAuthenticated(false);
       setUser(null);
     } finally {
@@ -84,24 +92,28 @@ export function TwitterDashboardPublisher() {
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const imageFiles = acceptedFiles.filter(file => file.type.startsWith('image/'));
+    const imageFiles = acceptedFiles.filter((file) =>
+      file.type.startsWith("image/")
+    );
     if (imageFiles.length > 0) {
-      setMediaFiles(prev => [...prev, ...imageFiles].slice(0, 4)); // Max 4 images
-      toast.success(`Added ${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''}`);
+      setMediaFiles((prev) => [...prev, ...imageFiles].slice(0, 4)); // Max 4 images
+      toast.success(
+        `Added ${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""}`
+      );
     }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp'],
+      "image/*": [".jpeg", ".jpg", ".png", ".gif", ".webp"],
     },
     maxFiles: 4,
     maxSize: 5 * 1024 * 1024, // 5MB per file
   });
 
   const removeMedia = (index: number) => {
-    setMediaFiles(prev => prev.filter((_, i) => i !== index));
+    setMediaFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const generateAITweet = async () => {
@@ -112,11 +124,11 @@ export function TwitterDashboardPublisher() {
 
     try {
       setIsGeneratingAI(true);
-      
-      const response = await fetch('/api/ai/generate-tweet', {
-        method: 'POST',
+
+      const response = await fetch("/api/ai/generate-tweet", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           prompt: text.trim(),
@@ -126,17 +138,18 @@ export function TwitterDashboardPublisher() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate tweet');
+        throw new Error(data.error || "Failed to generate tweet");
       }
 
       if (data.tweet) {
         setText(data.tweet);
         toast.success("AI tweet generated successfully!");
       } else {
-        throw new Error('No tweet generated');
+        throw new Error("No tweet generated");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate AI tweet';
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to generate AI tweet";
       toast.error(errorMessage);
     } finally {
       setIsGeneratingAI(false);
@@ -155,7 +168,9 @@ export function TwitterDashboardPublisher() {
     }
 
     if (text.length > maxLength) {
-      toast.error(`Tweet is too long. Maximum ${maxLength} characters allowed.`);
+      toast.error(
+        `Tweet is too long. Maximum ${maxLength} characters allowed.`
+      );
       return;
     }
 
@@ -163,7 +178,7 @@ export function TwitterDashboardPublisher() {
       setIsPublishing(true);
       setPublishResult(null);
 
-      console.log('🐦 Publishing tweet:', text.substring(0, 50) + '...');
+      console.log("🐦 Publishing tweet:", text.substring(0, 50) + "...");
 
       // Upload media files if any
       let mediaUrls: string[] = [];
@@ -173,8 +188,8 @@ export function TwitterDashboardPublisher() {
           formData.append(`media_${index}`, file);
         });
 
-        const uploadResponse = await fetch('/api/upload-media', {
-          method: 'POST',
+        const uploadResponse = await fetch("/api/upload-media", {
+          method: "POST",
           body: formData,
         });
 
@@ -184,10 +199,10 @@ export function TwitterDashboardPublisher() {
         }
       }
 
-      const response = await fetch('/api/twitter/publish', {
-        method: 'POST',
+      const response = await fetch("/api/twitter/publish", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           text: text.trim(),
@@ -198,7 +213,7 @@ export function TwitterDashboardPublisher() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to publish tweet');
+        throw new Error(data.error || "Failed to publish tweet");
       }
 
       if (data.success && data.tweet) {
@@ -207,15 +222,19 @@ export function TwitterDashboardPublisher() {
         setText(""); // Reset form
         setMediaFiles([]); // Clear media files
       } else {
-        throw new Error('Unexpected response format');
+        throw new Error("Unexpected response format");
       }
     } catch (error) {
-      console.error('❌ Publish error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to publish tweet';
+      console.error("❌ Publish error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to publish tweet";
       toast.error(errorMessage);
-      
+
       // If authentication error, trigger re-auth
-      if (errorMessage.includes('authentication') || errorMessage.includes('Unauthorized')) {
+      if (
+        errorMessage.includes("authentication") ||
+        errorMessage.includes("Unauthorized")
+      ) {
         setIsAuthenticated(false);
         setUser(null);
       }
@@ -249,7 +268,10 @@ export function TwitterDashboardPublisher() {
             </CardDescription>
           </CardHeader>
         </Card>
-        <TwitterAuth onAuthSuccess={handleAuthSuccess} onAuthError={handleAuthError} />
+        <TwitterAuth
+          onAuthSuccess={handleAuthSuccess}
+          onAuthError={handleAuthError}
+        />
       </div>
     );
   }
@@ -277,14 +299,20 @@ export function TwitterDashboardPublisher() {
           />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Badge 
-                variant={remainingChars < 0 ? "destructive" : remainingChars < 20 ? "secondary" : "outline"}
+              <Badge
+                variant={
+                  remainingChars < 0
+                    ? "destructive"
+                    : remainingChars < 20
+                    ? "secondary"
+                    : "outline"
+                }
               >
                 {remainingChars} characters remaining
               </Badge>
               {mediaFiles.length > 0 && (
                 <Badge variant="outline">
-                  {mediaFiles.length} image{mediaFiles.length > 1 ? 's' : ''}
+                  {mediaFiles.length} image{mediaFiles.length > 1 ? "s" : ""}
                 </Badge>
               )}
             </div>
@@ -333,9 +361,9 @@ export function TwitterDashboardPublisher() {
           <div
             {...getRootProps()}
             className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-              isDragActive 
-                ? 'border-primary bg-primary/5' 
-                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+              isDragActive
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-muted-foreground/50"
             }`}
           >
             <input {...getInputProps()} />

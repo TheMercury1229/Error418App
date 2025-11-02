@@ -1,20 +1,26 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Twitter, 
-  Users, 
-  Heart, 
-  Repeat2, 
-  MessageCircle, 
+import {
+  Twitter,
+  Users,
+  Heart,
+  Repeat2,
+  MessageCircle,
   TrendingUp,
   RefreshCw,
   AlertCircle,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { TwitterAuth } from "./twitter-auth";
 import { TwitterDashboardPublisher } from "./twitter-dashboard-publisher";
@@ -73,17 +79,18 @@ export function TwitterAnalytics() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/twitter/analytics');
+      const response = await fetch("/api/twitter/analytics");
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch analytics');
+        throw new Error(data.error || "Failed to fetch analytics");
       }
 
       setAnalytics(data);
     } catch (error) {
-      console.error('Failed to fetch Twitter analytics:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch analytics';
+      console.error("Failed to fetch Twitter analytics:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch analytics";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -102,17 +109,17 @@ export function TwitterAnalytics() {
   };
 
   const formatNumber = (num: number | undefined): string => {
-    if (!num) return '0';
+    if (!num) return "0";
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
   };
 
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -124,8 +131,11 @@ export function TwitterAnalytics() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <TwitterAuth onAuthSuccess={handleAuthSuccess} onAuthError={handleAuthError} />
-        
+        <TwitterAuth
+          onAuthSuccess={handleAuthSuccess}
+          onAuthError={handleAuthError}
+        />
+
         {error && (
           <Card className="border-destructive">
             <CardContent className="flex items-center gap-2 p-4">
@@ -144,7 +154,9 @@ export function TwitterAnalytics() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Twitter Analytics</h2>
-          <p className="text-muted-foreground">Overview of your Twitter performance</p>
+          <p className="text-muted-foreground">
+            Overview of your Twitter performance
+          </p>
         </div>
         <Button
           variant="outline"
@@ -180,10 +192,7 @@ export function TwitterAnalytics() {
       ) : analytics ? (
         <>
           {/* Quick Tweet Publisher */}
-          <TwitterDashboardPublisher 
-            isAuthenticated={isAuthenticated} 
-            onAuthRequired={handleAuthRequired}
-          />
+          <TwitterDashboardPublisher />
 
           {/* Account Overview */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -213,7 +222,9 @@ export function TwitterAnalytics() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Tweets</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Tweets
+                </CardTitle>
                 <Twitter className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -225,7 +236,9 @@ export function TwitterAnalytics() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg. Engagement</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Avg. Engagement
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -241,7 +254,9 @@ export function TwitterAnalytics() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Top Performing Tweet</CardTitle>
-                <CardDescription>Your best performing recent tweet</CardDescription>
+                <CardDescription>
+                  Your best performing recent tweet
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm">{analytics.topTweet.text}</p>
@@ -269,7 +284,9 @@ export function TwitterAnalytics() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Recent Tweets</CardTitle>
-              <CardDescription>Your latest tweets and their performance</CardDescription>
+              <CardDescription>
+                Your latest tweets and their performance
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {analytics.recentTweets.length > 0 ? (
@@ -295,14 +312,17 @@ export function TwitterAnalytics() {
                           <span>{formatDate(tweet.createdAt)}</span>
                         </div>
                       </div>
-                      {index < analytics.recentTweets.slice(0, 5).length - 1 && (
+                      {index <
+                        analytics.recentTweets.slice(0, 5).length - 1 && (
                         <Separator className="mt-4" />
                       )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No recent tweets found</p>
+                <p className="text-sm text-muted-foreground">
+                  No recent tweets found
+                </p>
               )}
             </CardContent>
           </Card>

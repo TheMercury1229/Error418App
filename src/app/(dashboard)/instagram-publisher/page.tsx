@@ -14,7 +14,7 @@ export default function SocialPublisherPage() {
           description="Publish content directly to Instagram and Twitter"
         />
         <TutorialButton
-          page="social"
+          page="instagram"
           label="Social Publishing Tutorial"
           variant="link"
           size="sm"
