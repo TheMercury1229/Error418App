@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { category = 'general', userContext = '' } = body;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const promptSuggestionPrompt = `
 You are an expert social media strategist. Generate 8 creative and engaging tweet prompt suggestions for the category: "${category}".
