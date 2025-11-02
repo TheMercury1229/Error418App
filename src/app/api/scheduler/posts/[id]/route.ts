@@ -1,25 +1,28 @@
+// app/api/scheduled-post/[id]/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { auth } from "@clerk/nextjs/server";
 
 const prisma = new PrismaClient();
 
-// GET - Fetch specific scheduled post
-export async function GET({ params }: { params: Promise<{ id: string }> }) {
+// If you did want to enable caching for GET, you could add:
+// export const dynamic = 'force-static';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = await params;
-
     const { userId } = await auth();
-
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const scheduledPost = await prisma.scheduledPost.findFirst({
-      where: {
-        id,
-        clerkId: userId,
-      },
+      where: { id, clerkId: userId },
     });
 
     if (!scheduledPost) {
@@ -29,10 +32,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      post: scheduledPost,
-    });
+    return NextResponse.json({ success: true, post: scheduledPost });
   } catch (error) {
     console.error("Fetch scheduled post error:", error);
     return NextResponse.json(
@@ -44,16 +44,32 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
   }
 }
 
-// PUT - Update scheduled post
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth();
-
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    const existingPost = await prisma.scheduledPost.findFirst({
+      where: { id, clerkId: userId },
+    });
+    if (!existingPost) {
+      return NextResponse.json(
+        { error: "Scheduled post not found" },
+        { status: 404 }
+      );
+    }
+    if (existingPost.status === "published") {
+      return NextResponse.json(
+        { error: "Cannot update published posts" },
+        { status: 400 }
+      );
     }
 
     const body = await request.json();
@@ -66,29 +82,6 @@ export async function PUT(
       hashtags,
       status,
     } = body;
-
-    // Check if post exists and belongs to user
-    const existingPost = await prisma.scheduledPost.findFirst({
-      where: {
-        id: params.id,
-        clerkId: userId,
-      },
-    });
-
-    if (!existingPost) {
-      return NextResponse.json(
-        { error: "Scheduled post not found" },
-        { status: 404 }
-      );
-    }
-
-    // Don't allow updating published posts
-    if (existingPost.status === "published") {
-      return NextResponse.json(
-        { error: "Cannot update published posts" },
-        { status: 400 }
-      );
-    }
 
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
@@ -110,14 +103,11 @@ export async function PUT(
     }
 
     const updatedPost = await prisma.scheduledPost.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
     });
 
-    return NextResponse.json({
-      success: true,
-      post: updatedPost,
-    });
+    return NextResponse.json({ success: true, post: updatedPost });
   } catch (error) {
     console.error("Update scheduled post error:", error);
     return NextResponse.json(
@@ -129,26 +119,21 @@ export async function PUT(
   }
 }
 
-// DELETE - Delete scheduled post
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth();
-
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if post exists and belongs to user
-    const existingPost = await prisma.scheduledPost.findFirst({
-      where: {
-        id: params.id,
-        clerkId: userId,
-      },
-    });
+    const { id } = await params;
 
+    const existingPost = await prisma.scheduledPost.findFirst({
+      where: { id, clerkId: userId },
+    });
     if (!existingPost) {
       return NextResponse.json(
         { error: "Scheduled post not found" },
@@ -156,9 +141,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.scheduledPost.delete({
-      where: { id: params.id },
-    });
+    await prisma.scheduledPost.delete({ where: { id } });
 
     return NextResponse.json({
       success: true,
