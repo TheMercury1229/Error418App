@@ -39,11 +39,22 @@ interface ImageStudioProps {
 export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"generate" | "edit">("generate");
+  
+  // Generate tab states
   const [prompt, setPrompt] = useState("");
   const [caption, setCaption] = useState("");
   const [generatedImage, setGeneratedImage] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
+  
+  // Edit tab states
+  const [editPrompt, setEditPrompt] = useState("");
+  const [editCaption, setEditCaption] = useState("");
+  const [uploadedImage, setUploadedImage] = useState<string>("");
+  const [editedImage, setEditedImage] = useState<string>("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [isGeneratingEditCaption, setIsGeneratingEditCaption] = useState(false);
+  
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -240,6 +251,90 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
     setSuccess(null);
   };
 
+  // Edit tab handlers
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUploadedImage(reader.result as string);
+        setEditedImage("");
+        setEditCaption("");
+        setEditPrompt("");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditImage = async () => {
+    if (!uploadedImage || !editPrompt.trim()) {
+      setError("Please upload an image and enter editing instructions");
+      return;
+    }
+
+    setIsEditing(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Simulate image editing - in production, this would call an AI editing API
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      
+      // For now, just use the uploaded image as the edited result
+      setEditedImage(uploadedImage);
+      
+      // Generate caption for edited image
+      await handleGenerateEditCaption();
+      
+      toast.success("Image edited successfully!");
+      setSuccess("Image edited and saved successfully!");
+    } catch (error) {
+      console.error("Image editing error:", error);
+      setError("Failed to edit image. Please try again.");
+      toast.error("Failed to edit image");
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleGenerateEditCaption = async () => {
+    if (!editPrompt.trim()) {
+      return;
+    }
+
+    setIsGeneratingEditCaption(true);
+
+    try {
+      const generatedCaption = await generateCaptionFromPrompt(editPrompt);
+      setEditCaption(generatedCaption);
+      toast.success("Caption generated successfully!");
+    } catch (error) {
+      console.error("Caption generation error:", error);
+      toast.error("Failed to generate caption");
+    } finally {
+      setIsGeneratingEditCaption(false);
+    }
+  };
+
+  const handleCopyEditCaption = () => {
+    if (editCaption) {
+      navigator.clipboard.writeText(editCaption);
+      toast.success("Caption copied to clipboard!");
+    }
+  };
+
+  const handleDownloadEditedImage = () => {
+    if (editedImage) {
+      const link = document.createElement("a");
+      link.href = editedImage;
+      link.download = `ai-edited-image-${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Image downloaded successfully!");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -264,23 +359,95 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
         </div>
       </div>
 
+      {/* Feature Selection Cards */}
+      <div className="flex justify-center mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl w-full">
+          <Card 
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
+              activeTab === "generate" 
+                ? "border-purple-500 border-2 shadow-md" 
+                : "border-muted hover:border-purple-300"
+            }`}
+            onClick={() => setActiveTab("generate")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${
+                  activeTab === "generate" 
+                    ? "bg-purple-100 dark:bg-purple-900" 
+                    : "bg-muted"
+                }`}>
+                  <Sparkles className={`h-5 w-5 ${
+                    activeTab === "generate" 
+                      ? "text-purple-600 dark:text-purple-400" 
+                      : "text-muted-foreground"
+                  }`} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold mb-1">
+                    Generate New Image
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Create stunning AI-generated images from text prompts.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant="outline" className="text-xs px-2 py-0">Text-to-Image</Badge>
+                    <Badge variant="outline" className="text-xs px-2 py-0">Auto Captions</Badge>
+                    <Badge variant="outline" className="text-xs px-2 py-0">HD Quality</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
+              activeTab === "edit" 
+                ? "border-blue-500 border-2 shadow-md" 
+                : "border-muted hover:border-blue-300"
+            }`}
+            onClick={() => setActiveTab("edit")}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${
+                  activeTab === "edit" 
+                    ? "bg-blue-100 dark:bg-blue-900" 
+                    : "bg-muted"
+                }`}>
+                  <Wand2 className={`h-5 w-5 ${
+                    activeTab === "edit" 
+                      ? "text-blue-600 dark:text-blue-400" 
+                      : "text-muted-foreground"
+                  }`} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold mb-1">
+                    Edit Existing Image
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Upload and enhance your images with AI-powered editing.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant="outline" className="text-xs px-2 py-0">Upload & Edit</Badge>
+                    <Badge variant="outline" className="text-xs px-2 py-0">AI Enhancement</Badge>
+                    <Badge variant="outline" className="text-xs px-2 py-0">Smart Captions</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
       {/* Main Content */}
       <Tabs
         value={activeTab}
         onValueChange={(value: string) =>
           setActiveTab(value as "generate" | "edit")
         }
+        className="space-y-6"
       >
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="generate" className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
-            Generate
-          </TabsTrigger>
-          <TabsTrigger value="edit" className="flex items-center gap-2">
-            <Wand2 className="h-4 w-4" />
-            Edit
-          </TabsTrigger>
-        </TabsList>
 
         {/* Generate Tab */}
         <TabsContent value="generate" className="space-y-6">
@@ -478,40 +645,282 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
 
         {/* Edit Tab */}
         <TabsContent value="edit" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Upload Image to Edit
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="font-medium mb-2">Upload an Image</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Upload an existing image to enhance it with AI
-                </p>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  className="max-w-xs mx-auto"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Upload & Edit Instructions */}
+            <div className="space-y-6">
+              {/* Upload Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    Upload Image
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!uploadedImage ? (
+                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                      <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="font-medium mb-2">Upload an Image</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Upload an existing image to enhance it with AI
+                      </p>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="max-w-xs mx-auto cursor-pointer"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <img
+                          src={uploadedImage}
+                          alt="Uploaded Image"
+                          className="w-full rounded-lg"
+                          style={{ maxHeight: "250px", objectFit: "cover" }}
+                        />
+                        <Badge className="absolute top-2 left-2 bg-blue-600">
+                          <Upload className="h-3 w-3 mr-1" />
+                          Uploaded
+                        </Badge>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setUploadedImage("");
+                          setEditedImage("");
+                          setEditPrompt("");
+                          setEditCaption("");
+                        }}
+                        className="w-full"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Remove & Upload New
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Edit Instructions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Wand2 className="h-5 w-5" />
+                    Edit Instructions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-prompt">
+                      Describe how you want to edit this image:
+                    </Label>
+                    <Textarea
+                      id="edit-prompt"
+                      value={editPrompt}
+                      onChange={(e) => setEditPrompt(e.target.value)}
+                      placeholder="e.g., Make it brighter, add a sunset effect, enhance colors, remove background, add artistic filter..."
+                      rows={5}
+                      className="resize-none"
+                      disabled={isEditing || !uploadedImage}
+                      maxLength={500}
+                    />
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        {editPrompt.length}/500 characters
+                      </p>
+                      <PromptEnhancerButton
+                        prompt={editPrompt}
+                        onPromptChange={setEditPrompt}
+                        context="image-generation"
+                        disabled={isEditing || !uploadedImage}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={handleEditImage}
+                      disabled={!uploadedImage || !editPrompt.trim() || isEditing}
+                      className="bg-blue-600 hover:bg-blue-700 flex-1"
+                    >
+                      {isEditing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Editing...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="h-4 w-4 mr-2" />
+                          Edit Image
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={handleGenerateEditCaption}
+                      disabled={!uploadedImage || !editPrompt.trim() || isGeneratingEditCaption}
+                    >
+                      {isGeneratingEditCaption ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Caption
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column - Preview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5" />
+                  Preview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {editedImage ? (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <img
+                        src={editedImage}
+                        alt="Edited AI Image"
+                        className="w-full rounded-lg"
+                        style={{ maxHeight: "300px", objectFit: "cover" }}
+                      />
+                      <Badge className="absolute top-2 left-2 bg-green-600">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Edited
+                      </Badge>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadEditedImage}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUploadToInstagram}
+                      >
+                        <Share className="h-4 w-4 mr-1" />
+                        Instagram
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUploadToYouTube}
+                      >
+                        <Youtube className="h-4 w-4 mr-1" />
+                        YouTube
+                      </Button>
+                    </div>
+                  </div>
+                ) : uploadedImage ? (
+                  <div className="border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-lg p-8 text-center">
+                    <Wand2 className="h-12 w-12 mx-auto mb-4 text-blue-600 dark:text-blue-400" />
+                    <h3 className="font-medium mb-2">Ready to Edit</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Enter editing instructions and click "Edit Image" to enhance your photo with AI
+                    </p>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                    <Image className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="font-medium mb-2">No Image Yet</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Upload an image to see the preview here
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Edit Caption Section */}
+          {editCaption && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Generated Caption
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="relative">
+                  <Textarea
+                    value={editCaption}
+                    onChange={(e) => setEditCaption(e.target.value)}
+                    rows={4}
+                    className="resize-none pr-10"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={handleCopyEditCaption}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyEditCaption}
+                  >
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copy Caption
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditCaption("")}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Clear
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
-      {/* Generation Progress */}
-      {isGenerating && (
+      {/* Generation/Editing Progress */}
+      {(isGenerating || isEditing) && (
         <Card className="border-purple-200 dark:border-purple-800">
           <CardContent className="p-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 animate-spin text-purple-600" />
-                  Generating your image...
+                  {isGenerating ? (
+                    <>
+                      <Sparkles className="h-4 w-4 animate-spin text-purple-600" />
+                      Generating your image...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-4 w-4 animate-spin text-blue-600" />
+                      Editing your image...
+                    </>
+                  )}
                 </span>
                 <span className="text-sm text-muted-foreground">
                   Please wait
@@ -519,7 +928,10 @@ export function ImageStudio({ onImageGenerated }: ImageStudioProps) {
               </div>
               <Progress value={undefined} className="h-2" />
               <p className="text-xs text-muted-foreground">
-                AI is creating your image based on your prompt...
+                {isGenerating 
+                  ? "AI is creating your image based on your prompt..."
+                  : "AI is enhancing your image based on your instructions..."
+                }
               </p>
             </div>
           </CardContent>

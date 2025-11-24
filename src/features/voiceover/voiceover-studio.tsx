@@ -89,7 +89,8 @@ export function VoiceoverStudio() {
             clearInterval(progressInterval);
             return 90;
           }
-          return prev + Math.random() * 15;
+          // Round to integer for display
+          return Math.round(prev + Math.random() * 15);
         });
       }, 200);
 

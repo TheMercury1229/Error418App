@@ -95,7 +95,7 @@ export function VideoPreview({
   // Empty state when no video
   if (!video && !isGenerating) {
     return (
-      <div className="aspect-video bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600">
+      <div className="aspect-video bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600">
         <div className="text-center space-y-3">
           <div className="p-4 bg-purple-100 dark:bg-purple-900 rounded-full w-fit mx-auto">
             <Sparkles className="h-8 w-8 text-purple-600 dark:text-purple-400" />
@@ -118,7 +118,7 @@ export function VideoPreview({
     return (
       <div className="space-y-4">
         {/* Generation Progress */}
-        <div className="aspect-video bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-800">
+        <div className="aspect-video bg-linear-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-800">
           <div className="text-center space-y-4">
             <div className="relative">
               <div className="p-4 bg-purple-500 rounded-full">
@@ -142,11 +142,11 @@ export function VideoPreview({
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Generation Progress</span>
-              <Badge variant="secondary">{video.progress}%</Badge>
+              <Badge variant="secondary">{Math.round(video.progress)}%</Badge>
             </div>
             <Progress value={video.progress} className="h-2" />
             <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded text-xs text-blue-700 dark:text-blue-300">
-              💡 This usually takes {video.duration * 2} seconds. You can
+              💡 This usually takes up to 2 minutes. You can
               continue using other features while we generate your video.
             </div>
           </CardContent>
@@ -173,7 +173,7 @@ export function VideoPreview({
   if (video?.status === "failed") {
     return (
       <div className="space-y-4">
-        <div className="aspect-video bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-lg flex items-center justify-center border border-red-200 dark:border-red-800">
+        <div className="aspect-video bg-linear-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-lg flex items-center justify-center border border-red-200 dark:border-red-800">
           <div className="text-center space-y-3">
             <div className="p-4 bg-red-100 dark:bg-red-900 rounded-full w-fit mx-auto">
               <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
@@ -218,7 +218,7 @@ export function VideoPreview({
           />
 
           {/* Video Controls Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
             <div className="absolute bottom-4 left-4 right-4 flex items-center gap-3">
               {/* Play/Pause */}
               <Button

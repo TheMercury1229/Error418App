@@ -113,12 +113,13 @@ export function VideoGenerationHub() {
       setCurrentVideo(newVideo);
       setGenerationHistory((prev) => [newVideo, ...prev]);
 
-      // Start progress simulation - slower progress for realistic 1-2 minute generation
+      // Start progress simulation - slower progress for realistic 2 minute generation
       progressInterval = setInterval(() => {
         setCurrentVideo((prev) => {
           if (prev && prev.progress < 85) {
-            // Slower progress increment for longer generation time
-            const newProgress = prev.progress + Math.random() * 5 + 2;
+            // Slower progress increment for 2 minute generation time
+            const increment = Math.random() * 3 + 1; // 1-4% increment
+            const newProgress = Math.round(prev.progress + increment); // Round to integer
             const updatedVideo = {
               ...prev,
               progress: Math.min(newProgress, 85), // Cap at 85% until API completes
@@ -135,7 +136,7 @@ export function VideoGenerationHub() {
           }
           return prev;
         });
-      }, 5000); // Update every 5 seconds instead of 2 seconds
+      }, 3000); // Update every 3 seconds for smoother 2-minute progression
 
       // Call the new API that handles Cloudinary upload
       const formData = new FormData();
